@@ -12,8 +12,16 @@ export async function fetchPokemonData() {
     const height = pokemon.height;
     const weight = pokemon.weight;
     const image = pokemon.sprites?.front_default;
+    const description = pokemon.species ? pokemon.species.url : null;
 
-    return { pokemonName, height, weight, image };
+    // Fetch Pokémon description if available
+    let descriptionText = '';
+    if (description) {
+      const speciesResponse = await axios.get(description);
+      descriptionText = speciesResponse.data.flavor_text_entries.find((entry) => entry.language.name === 'en')?.flavor_text || '';
+    }
+
+    return { pokemonName, height, weight, image, descriptionText };
   } catch (error) {
     console.error('Error fetching Pokémon data:', error);
     throw new Error('Failed to fetch Pokémon data');
@@ -25,7 +33,7 @@ export async function fetchRandomPokemonNames(count = 1, excludeName = '') {
     const response = await axios.get(`${BASE_URL}/pokemon?limit=898`);
     const allPokemon = response.data.results;
     const filteredPokemon = allPokemon.filter((pokemon) => pokemon.name !== excludeName);
-    
+
     const shuffledPokemon = filteredPokemon.sort(() => 0.5 - Math.random());
     return shuffledPokemon.slice(0, count).map((pokemon) => pokemon.name);
   } catch (error) {

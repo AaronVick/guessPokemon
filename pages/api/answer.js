@@ -36,17 +36,17 @@ export default async function handler(req, res) {
   <body></body>
 </html>`;
     } else {
-      const { pokemonName, height, weight, image } = await fetchPokemonData();
-      const [wrongAnswer] = await fetchRandomPokemonNames(1);
-      const answers = [`Height: ${height}`, `Weight: ${weight}`, wrongAnswer].sort(() => Math.random() - 0.5);
-      const newCorrectIndex = answers.indexOf(`Height: ${height}`) + 1;
+      const { pokemonName, height, weight, image, descriptionText } = await fetchPokemonData();
+      const wrongAnswer = await fetchRandomPokemonNames(1, pokemonName); // Ensure wrong answer is a name
+      const answers = [pokemonName, wrongAnswer].sort(() => Math.random() - 0.5);
+      const newCorrectIndex = answers.indexOf(pokemonName) + 1;
 
       html = `
 <!DOCTYPE html>
 <html>
   <head>
     <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${baseUrl}/api/og?image=${encodeURIComponent(image)}" />
+    <meta property="fc:frame:image" content="${baseUrl}/api/og?image=${encodeURIComponent(image)}&description=${encodeURIComponent(descriptionText)}" />
     <meta property="fc:frame:button:1" content="${answers[0]}" />
     <meta property="fc:frame:button:2" content="${answers[1]}" />
     <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
