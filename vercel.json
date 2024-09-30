@@ -1,0 +1,14 @@
+{
+    "version": 2,
+    "builds": [
+      { "src": "package.json", "use": "@vercel/next" }
+    ],
+    "routes": [
+      { "src": "/api/frame", "dest": "/api/frame" },
+      { "src": "/api/og", "dest": "/api/og" },
+      { "src": "/api/answer", "dest": "/api/answer" },
+      { "src": "/api/start-game", "dest": "/api/start-game" },
+      { "src": "/(.*)", "dest": "/$1" }
+    ]
+  }
+  
