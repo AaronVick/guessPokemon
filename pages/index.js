@@ -2,7 +2,7 @@ import Head from 'next/head';
 
 export default function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
-  const shareText = encodeURIComponent(`Check out this awesome Pokémon Guessing Game!\n\nFrame by @your_username.eth`);
+  const shareText = encodeURIComponent(`Check out this awesome Pokémon Guessing Game!\n\nFrame by @aaronv.eth`);
   const shareLink = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
 
   return (
