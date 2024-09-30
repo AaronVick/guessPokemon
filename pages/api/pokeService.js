@@ -12,13 +12,17 @@ export async function fetchPokemonData() {
     const height = pokemon.height;
     const weight = pokemon.weight;
     const image = pokemon.sprites?.front_default;
-    const description = pokemon.species ? pokemon.species.url : null;
+    const descriptionUrl = pokemon.species ? pokemon.species.url : null;
 
     // Fetch Pokémon description if available
     let descriptionText = '';
-    if (description) {
-      const speciesResponse = await axios.get(description);
+    if (descriptionUrl) {
+      const speciesResponse = await axios.get(descriptionUrl);
       descriptionText = speciesResponse.data.flavor_text_entries.find((entry) => entry.language.name === 'en')?.flavor_text || '';
+
+      // Mask the Pokémon's name in the description
+      const regex = new RegExp(pokemonName, 'gi'); // case-insensitive matching
+      descriptionText = descriptionText.replace(regex, 'this Pokémon');
     }
 
     return { pokemonName, height, weight, image, descriptionText };
