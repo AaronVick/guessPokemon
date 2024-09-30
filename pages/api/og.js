@@ -31,7 +31,7 @@ export default function handler(req) {
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: '20px' }}>
             <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Guess the Pokémon!</h1>
-            <p style={{ fontSize: message ? '34px' : '24px', lineHeight: '1.4' }}>{message || description}</p>
+            <p style={{ fontSize: message ? '40px' : '32px', lineHeight: '1.4' }}>{message || description}</p>
           </div>
           {image && (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
