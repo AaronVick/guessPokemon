@@ -1,5 +1,5 @@
 import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import for pokeService
 
 export default async function handler(req, res) {
   console.log('Answer API accessed');
@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     const { untrustedData } = req.body;
     console.log('Received data:', untrustedData);
 
+    // Parse the state from the request
     const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
     const sessionId = state.sessionId;
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
     // Feedback message
     const message = isCorrect ? 'Correct!' : 'Incorrect';
 
-    // Create response HTML with properly encoded state
+    // Create response HTML with properly formatted metatags
     const html = `
       <!DOCTYPE html>
       <html>
@@ -77,6 +78,7 @@ export default async function handler(req, res) {
       </html>
     `;
 
+    // Properly set content-type header for HTML response
     res.setHeader('Content-Type', 'text/html');
     return res.status(200).send(html);
 
