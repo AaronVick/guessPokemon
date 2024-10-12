@@ -57,41 +57,51 @@ export default async function handler(req, res) {
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
-    // Create the question response HTML
+    // Create the question response HTML with a split layout for the question and buttons
     const html = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${image}" />
-          <meta property="fc:frame:input:question" content="Guess the Pokémon's name!" />
-          <meta property="fc:frame:button:1" content="${button1Content}" />
-          <meta property="fc:frame:button:2" content="${button2Content}" />
-          <meta property="fc:frame:button:1:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-          <meta property="fc:frame:button:2:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
-        </head>
-        <body>
-          <h1>Guess the Pokémon!</h1>
-          <img src="${image}" alt="Pokémon Image" />
-          <p>Can you guess the Pokémon?</p>
-        </body>
+      <head>
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="${image}" />
+        <meta property="fc:frame:button:1" content="${button1Content}" />
+        <meta property="fc:frame:button:2" content="${button2Content}" />
+        <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
+        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+        <style>
+          body { display: flex; justify-content: space-between; align-items: center; font-family: Arial, sans-serif; }
+          .question-container { width: 45%; }
+          .image-container { width: 45%; }
+        </style>
+      </head>
+      <body>
+        <div class="question-container">
+          <h1>Guess the Pokémon's Name!</h1>
+          <button>${button1Content}</button>
+          <button>${button2Content}</button>
+        </div>
+        <div class="image-container">
+          <img src="${image}" alt="${pokemonName}" width="300" />
+        </div>
+      </body>
       </html>
     `;
 
+    // Send the HTML response
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
+
   } catch (error) {
-    console.error('Error starting game:', error);
-    
-    // Provide error-specific HTML
+    console.error('Error in start-game handler:', error);
+
+    // Provide error-specific HTML to inform the user
     const errorHtml = `
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
+          <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
           <meta property="fc:frame:button:1" content="Try Again" />
-          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
+          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/start-game" />
         </head>
         <body></body>
       </html>
