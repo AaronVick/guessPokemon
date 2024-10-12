@@ -10,27 +10,27 @@ export default async function handler(req, res) {
 
   try {
     const { untrustedData } = req.body;
+    
+    // Logging incoming data
+    console.log('Received data:', untrustedData);
+
     const fid = untrustedData?.fid;
-    const sessionId = untrustedData?.sessionId; // Get session ID from request
+    const sessionId = untrustedData?.sessionId; // Get session ID from the request
     const selectedButton = untrustedData?.selectedButton;
     const correctIndex = untrustedData?.correctIndex;
     const correctTitle = untrustedData?.correctTitle;
+
+    // Ensure all required data is present
+    if (!fid || !sessionId || typeof selectedButton === 'undefined' || typeof correctIndex === 'undefined') {
+      console.error('Missing required data:', { fid, sessionId, selectedButton, correctIndex });
+      return res.status(400).json({ error: 'Missing required data' });
+    }
 
     console.log('Received FID:', fid);
     console.log('Received sessionId:', sessionId);
     console.log('Selected button:', selectedButton);
     console.log('Correct button index:', correctIndex);
     console.log('Correct answer title:', correctTitle);
-
-    // Ensure that FID and sessionId are present
-    if (!fid || !sessionId) {
-      console.error('FID or sessionId missing from request');
-      return res.status(400).json({ error: 'FID and sessionId are required to answer the game' });
-    }
-
-    // Check if the selected button matches the correct button
-    const isCorrect = selectedButton === correctIndex;
-    console.log('Is the answer correct?', isCorrect);
 
     // Fetch the specific game session from Firebase using the sessionId
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     }
 
     const sessionData = sessionSnapshot.data();
+    const isCorrect = selectedButton === correctIndex;
     const newCorrectCount = isCorrect ? sessionData.correctCount + 1 : sessionData.correctCount;
     const newTotalAnswered = sessionData.totalAnswered + 1;
 
@@ -52,10 +53,10 @@ export default async function handler(req, res) {
     await sessionRef.update({
       correctCount: newCorrectCount,
       totalAnswered: newTotalAnswered,
-      timestamp: new Date(),
+      timestamp: new Date(), // Update timestamp with the latest interaction
     });
 
-    // Send back the result
+    // Prepare the HTML response with the result
     const html = `
       <!DOCTYPE html>
       <html>
@@ -77,6 +78,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error in answer handler:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
