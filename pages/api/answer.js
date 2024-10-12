@@ -10,15 +10,14 @@ export default async function handler(req, res) {
 
   try {
     const { untrustedData } = req.body;
-    
-    // Logging incoming data
     console.log('Received data:', untrustedData);
 
+    // Parse the state passed from the previous frame
+    const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
-    const sessionId = untrustedData?.sessionId; // Get session ID from the request
-    const selectedButton = untrustedData?.selectedButton;
-    const correctIndex = untrustedData?.correctIndex;
-    const correctTitle = untrustedData?.correctTitle;
+    const sessionId = state.sessionId;  // Extract sessionId from the state
+    const selectedButton = untrustedData.buttonIndex;  // Get which button was clicked
+    const correctIndex = state.correctIndex;  // Extract correct index from the state
 
     // Ensure all required data is present
     if (!fid || !sessionId || typeof selectedButton === 'undefined' || typeof correctIndex === 'undefined') {
@@ -30,7 +29,6 @@ export default async function handler(req, res) {
     console.log('Received sessionId:', sessionId);
     console.log('Selected button:', selectedButton);
     console.log('Correct button index:', correctIndex);
-    console.log('Correct answer title:', correctTitle);
 
     // Fetch the specific game session from Firebase using the sessionId
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
@@ -68,7 +66,7 @@ export default async function handler(req, res) {
         <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
       </head>
       <body>
-        <p>${isCorrect ? 'Correct!' : 'Incorrect'} Answer: ${correctTitle}</p>
+        <p>${isCorrect ? 'Correct!' : 'Incorrect'} Answer: ${state.correctTitle}</p>
       </body>
       </html>
     `;
