@@ -21,9 +21,28 @@ export default async function handler(req, res) {
     // Fetch leaderboard data from Firebase
     const leaderboardRef = db.collection('leaderboard');
     const snapshot = await leaderboardRef.orderBy('correctCount', 'desc').limit(10).get();
-    const topPlayers = snapshot.docs.map((doc) => doc.data());
+
+    // Check if the leaderboard is empty
+    if (snapshot.empty) {
+      const emptyHtml = `
+        <html>
+          <head>
+            <meta property="fc:frame" content="vNext" />
+            <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent('No players yet! Play to be the first on the leaderboard.')}" />
+            <meta property="fc:frame:button:1" content="Play Game" />
+            <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game" />
+          </head>
+          <body>
+            <h1>No players yet! Play to be the first on the leaderboard.</h1>
+          </body>
+        </html>
+      `;
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(200).send(emptyHtml);
+    }
 
     // Fetch usernames from Pinata for each player
+    const topPlayers = snapshot.docs.map((doc) => doc.data());
     const leaderboardItems = await Promise.all(
       topPlayers.map(async (player) => {
         const username = await getFarcasterProfileName(player.FID);
