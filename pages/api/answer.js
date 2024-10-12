@@ -15,26 +15,18 @@ export default async function handler(req, res) {
 
     const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
-    const sessionId = state.sessionId; 
+    const sessionId = state.sessionId;
     const selectedButton = untrustedData.buttonIndex;
     const correctIndex = state.correctIndex;
-    const correctTitle = state.correctTitle || '';
-    const totalAnswered = state.totalAnswered || 0;
-    const correctCount = state.correctCount || 0;
 
     if (!fid || !sessionId || typeof selectedButton === 'undefined' || typeof correctIndex === 'undefined') {
       console.error('Missing required data:', { fid, sessionId, selectedButton, correctIndex });
       return res.status(400).json({ error: 'Missing required data' });
     }
 
-    console.log('Received FID:', fid);
-    console.log('Received sessionId:', sessionId);
-    console.log('Selected button:', selectedButton);
-    console.log('Correct button index:', correctIndex);
-
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
     const sessionSnapshot = await sessionRef.get();
-    
+
     if (!sessionSnapshot.exists) {
       console.error('Game session not found for FID:', fid);
       return res.status(404).json({ error: 'Game session not found' });
@@ -57,22 +49,24 @@ export default async function handler(req, res) {
 
     // Feedback message
     const message = isCorrect
-      ? `Correct! The answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`
-      : `Wrong. The correct answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`;
+      ? `Correct! The answer was ${state.correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`
+      : `Wrong. The correct answer was ${state.correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`;
 
-    // Properly encode values for URL-safe transmission
-    const encodedMessage = encodeURIComponent(message);
-    const encodedShareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
-    const shareUrl = `https://warpcast.com/~/compose?text=${encodedShareText}`;
+    // Create the share URL
+    const shareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
+    const shareUrl = `https://warpcast.com/~/compose?text=${shareText}`;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
-    
-    // Generate the HTML response with metatags
+
+    // Generate the OG image URL for answer feedback
+    const ogImageUrl = `${baseUrl}/api/answerOG?message=${encodeURIComponent(message)}&correctCount=${newCorrectCount}&totalAnswered=${newTotalAnswered}`;
+
+    // Generate the response HTML with metatags
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:message" content="${encodedMessage}" />
+        <meta property="fc:frame:image" content="${ogImageUrl}" />
         <meta property="fc:frame:button:1" content="Next Question" />
         <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game?fid=${encodeURIComponent(fid)}&sessionId=${encodeURIComponent(sessionId)}" />
         <meta property="fc:frame:button:2" content="Share" />
@@ -92,7 +86,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error in answer handler:', error);
-
     const errorHtml = `
       <!DOCTYPE html>
       <html>
@@ -105,7 +98,6 @@ export default async function handler(req, res) {
       <body></body>
       </html>
     `;
-
     res.setHeader('Content-Type', 'text/html');
     return res.status(500).send(errorHtml);
   }
