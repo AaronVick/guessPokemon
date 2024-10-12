@@ -5,13 +5,22 @@ import fetch from 'node-fetch';
 const PINATA_HUB_API = 'https://hub.pinata.cloud/v1';
 const USER_DATA_TYPES = { USERNAME: 6 };
 
+// Function to fetch Farcaster username with a timeout
 async function getFarcasterProfileName(fid) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+
   try {
-    const response = await fetch(`${PINATA_HUB_API}/userDataByFid?fid=${fid}&user_data_type=${USER_DATA_TYPES.USERNAME}`);
+    const response = await fetch(`${PINATA_HUB_API}/userDataByFid?fid=${fid}&user_data_type=${USER_DATA_TYPES.USERNAME}`, {
+      signal: controller.signal,
+    });
     const data = await response.json();
     return data?.data?.userDataBody?.value || 'Unknown User';
-  } catch {
-    return 'Unknown User';
+  } catch (error) {
+    console.error('Error fetching username from Pinata:', error);
+    return 'Unknown User'; // Fallback in case of timeout or error
+  } finally {
+    clearTimeout(timeout); // Clear timeout after completion
   }
 }
 
@@ -19,11 +28,11 @@ export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
 
   try {
-    // Fetch leaderboard data from Firebase
+    // Fetch leaderboard data from Firebase, limit to top 10 players
     const leaderboardRef = db.collection('leaderboard');
     const snapshot = await leaderboardRef.orderBy('correctCount', 'desc').limit(10).get();
 
-    // Check if the leaderboard is empty
+    // If no entries exist in the leaderboard
     if (snapshot.empty) {
       return new ImageResponse(
         (
