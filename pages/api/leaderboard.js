@@ -1,4 +1,5 @@
 import { db } from '../../lib/firebase';
+import { ImageResponse } from '@vercel/og';
 import fetch from 'node-fetch';
 
 const PINATA_HUB_API = 'https://hub.pinata.cloud/v1';
@@ -24,21 +25,31 @@ export default async function handler(req, res) {
 
     // Check if the leaderboard is empty
     if (snapshot.empty) {
-      const emptyHtml = `
-        <html>
-          <head>
-            <meta property="fc:frame" content="vNext" />
-            <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent('No players yet! Play to be the first on the leaderboard.')}" />
-            <meta property="fc:frame:button:1" content="Play Game" />
-            <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game" />
-          </head>
-          <body>
-            <h1>No players yet! Play to be the first on the leaderboard.</h1>
-          </body>
-        </html>
-      `;
-      res.setHeader('Content-Type', 'text/html');
-      return res.status(200).send(emptyHtml);
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#1e2a38',
+              color: '#fff',
+              padding: '40px',
+              fontFamily: 'Arial, sans-serif',
+            }}
+          >
+            <h1 style={{ fontSize: '48px', marginBottom: '20px', color: '#FFD700' }}>Leaderboard</h1>
+            <p style={{ fontSize: '32px', lineHeight: '1.5', textAlign: 'center' }}>No players yet! Be the first to play!</p>
+          </div>
+        ),
+        {
+          width: 1200,
+          height: 630,
+        }
+      );
     }
 
     // Fetch usernames from Pinata for each player
@@ -55,42 +66,58 @@ export default async function handler(req, res) {
       .map((item, index) => `${index + 1}. ${item}`)
       .join('<br>');
 
-    // Return the HTML response with Farcaster frame meta tags
-    const html = `
-      <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/og?leaderboard=${encodeURIComponent(leaderboardContent)}" />
-          <meta property="fc:frame:button:1" content="Play Game" />
-          <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game" />
-          <meta property="fc:frame:button:2" content="Share Leaderboard" />
-          <meta property="fc:frame:button:2:action" content="link" />
-          <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=${encodeURIComponent('Check out the top players in the Pokémon Guessing Game!')}" />
-        </head>
-        <body></body>
-      </html>
-    `;
-
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(html);
+    // Return the leaderboard image with the top 10 players
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#1e2a38',
+            color: '#fff',
+            padding: '40px',
+            fontFamily: 'Arial, sans-serif',
+          }}
+        >
+          <h1 style={{ fontSize: '48px', marginBottom: '20px', color: '#FFD700' }}>Leaderboard</h1>
+          <div style={{ fontSize: '32px', lineHeight: '1.5', textAlign: 'center' }}>
+            {leaderboardItems.map((item, index) => (
+              <p key={index}>{index + 1}. {item}</p>
+            ))}
+          </div>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
   } catch (error) {
     console.error('Error generating leaderboard:', error);
 
-    const errorHtml = `
-      <html>
-        <head>
-          <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent('Error loading leaderboard.')}" />
-          <meta property="fc:frame:button:1" content="Try Again" />
-          <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/leaderboard" />
-        </head>
-        <body>
-          <p>Error loading leaderboard. Please try again.</p>
-        </body>
-      </html>
-    `;
-
-    res.setHeader('Content-Type', 'text/html');
-    res.status(500).send(errorHtml);
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: '#FF0000',
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <h1>Error Loading Leaderboard</h1>
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
   }
 }
