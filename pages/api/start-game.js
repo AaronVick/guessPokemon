@@ -1,5 +1,5 @@
 import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import for pokeService
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req, res) {
@@ -12,23 +12,25 @@ export default async function handler(req, res) {
 
   try {
     const { untrustedData } = req.body;
+    console.log('Received POST request to /api/start-game');
 
-    // Ensure FID is present
+    // Try to pull FID from untrustedData
     const fid = untrustedData?.fid;
+    
     if (!fid) {
-      console.error('FID not provided');
-      return res.status(400).json({ error: 'FID is required' });
+      console.error('FID not provided in untrusted data');
+      return res.status(400).json({ error: 'Valid FID is required' });
     }
 
+    // Create a sessionId if not provided
     let sessionId = untrustedData?.sessionId;
 
-    // Create a new session if sessionId is not provided
     if (!sessionId) {
-      sessionId = uuidv4(); // Generate a new session ID
+      sessionId = uuidv4(); // Generate a unique session ID
       console.log(`New session created with sessionId: ${sessionId}`);
       
-      // Create a new session in Firebase
-      const sessionRef = db.collection('leaderboard').doc(fid).collection('sessions').doc(sessionId);
+      // Create a new session in Firestore under the user's FID
+      const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
       await sessionRef.set({
         correctCount: 0,
         totalAnswered: 0,
@@ -52,7 +54,7 @@ export default async function handler(req, res) {
 
     console.log('Game data:', questionData);
 
-    // Present the first question (and not the answer yet)
+    // Present the first question
     const html = `
       <!DOCTYPE html>
       <html>
