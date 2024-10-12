@@ -1,5 +1,5 @@
 import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import for pokeService
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 
 export default async function handler(req, res) {
   console.log('Answer API accessed');
@@ -15,12 +15,12 @@ export default async function handler(req, res) {
 
     const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
-    const sessionId = state.sessionId;
+    const sessionId = state.sessionId; 
     const selectedButton = untrustedData.buttonIndex;
     const correctIndex = state.correctIndex;
+    const correctTitle = state.correctTitle || '';
     const totalAnswered = state.totalAnswered || 0;
     const correctCount = state.correctCount || 0;
-    const correctTitle = state.correctTitle;
 
     if (!fid || !sessionId || typeof selectedButton === 'undefined' || typeof correctIndex === 'undefined') {
       console.error('Missing required data:', { fid, sessionId, selectedButton, correctIndex });
@@ -60,14 +60,13 @@ export default async function handler(req, res) {
       ? `Correct! The answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`
       : `Wrong. The correct answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`;
 
-    // Ensure dynamic values are URL-safe
+    // Properly encode values for URL-safe transmission
     const encodedMessage = encodeURIComponent(message);
     const encodedShareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
     const shareUrl = `https://warpcast.com/~/compose?text=${encodedShareText}`;
-
-    // Generate HTML response
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
     
+    // Generate the HTML response with metatags
     const html = `
       <!DOCTYPE html>
       <html>
