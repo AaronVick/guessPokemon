@@ -10,16 +10,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Extract untrusted data from request body
     const { untrustedData } = req.body;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
+    
+    // Extract fid and sessionId from untrustedData
     const fid = untrustedData?.fid;
     const sessionId = untrustedData?.sessionId;
+
+    // Log incoming fid and sessionId for troubleshooting
+    console.log(`Received FID: ${fid}, Session ID: ${sessionId}`);
     
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
       return res.status(400).json({ error: 'FID and sessionId are required' });
     }
 
+    // Fetch Pokémon data
     let pokemonData, wrongPokemonName;
     try {
       pokemonData = await fetchPokemonData();
@@ -34,10 +41,15 @@ export default async function handler(req, res) {
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
+    console.log('Game data:', { pokemonName, height, image, wrongPokemonName });
+
+    // Reference the Firestore document
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
     const sessionSnapshot = await sessionRef.get();
 
+    // If the session doesn't exist, create it, otherwise update it
     if (!sessionSnapshot.exists) {
+      console.log('Creating new session...');
       await sessionRef.set({
         pokemonName,
         correctIndex: correctButtonIndex,
@@ -46,6 +58,7 @@ export default async function handler(req, res) {
         timestamp: new Date(),
       });
     } else {
+      console.log('Updating existing session...');
       await sessionRef.update({
         pokemonName,
         correctIndex: correctButtonIndex,
@@ -53,8 +66,10 @@ export default async function handler(req, res) {
       });
     }
 
+    // Properly encode the parameters for the OG image endpoint
     const ogImageUrl = `${baseUrl}/api/og?pokemonName=${encodeURIComponent(pokemonName)}&height=${encodeURIComponent(height)}&image=${encodeURIComponent(image)}`;
 
+    // Create the game response HTML
     const html = `
       <!DOCTYPE html>
       <html>
@@ -70,12 +85,14 @@ export default async function handler(req, res) {
       </html>
     `;
 
+    // Send the HTML response
     res.setHeader('Content-Type', 'text/html');
     return res.status(200).send(html);
 
   } catch (error) {
     console.error('Error in start-game handler:', error);
 
+    // Provide error-specific HTML to inform the user
     const errorHtml = `
       <html>
         <head>
