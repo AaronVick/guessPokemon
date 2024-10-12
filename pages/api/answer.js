@@ -45,26 +45,31 @@ export default async function handler(req, res) {
     console.log('New correct count:', newCorrectCount);
     console.log('New total answered:', newTotalAnswered);
 
+    // Update session with new data
     await sessionRef.update({
       correctCount: newCorrectCount,
       totalAnswered: newTotalAnswered,
       timestamp: new Date(),
     });
 
-    // Generate feedback (without image)
+    // Feedback message
     const message = isCorrect ? 'Correct!' : 'Incorrect';
+
+    // Create response HTML (without image, just feedback text and next action)
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
         <meta property="fc:frame:message" content="${message}" />
-        <meta property="fc:frame:button:1" content="Play Again" />
+        <meta property="fc:frame:button:1" content="Next Question" />
+        <meta property="fc:frame:button:1:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game?fid=${fid}&sessionId=${sessionId}" />
         <meta property="fc:frame:button:2" content="Share" />
-        <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
+        <meta property="fc:frame:button:2:action" content="link" />
+        <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=${encodeURIComponent('I just played this awesome Pokémon guessing game!')}" />
       </head>
       <body>
-        <p>Answer Feedback: ${message}</p>
+        <h1>Answer Feedback: ${message}</h1>
         <p>Correct Answers: ${newCorrectCount}</p>
         <p>Total Answered: ${newTotalAnswered}</p>
       </body>

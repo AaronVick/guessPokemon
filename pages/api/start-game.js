@@ -1,71 +1,96 @@
-import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
+import { db } from '../../lib/firebase'; // Adjust path to firebase setup
 
 export default async function handler(req, res) {
-  console.log('Start Game API accessed');
-  
-  if (req.method !== 'POST') {
-    console.error(`Method ${req.method} not allowed`);
+  console.log(`Received ${req.method} request to /api/start-game`);
+
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    console.log(`Method ${req.method} not allowed`);
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    const { untrustedData } = req.body;
-    console.log('Received data:', untrustedData);
-    
-    const fid = untrustedData.fid;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
+    const sessionId = req.query.sessionId;
+    const fid = req.query.fid;
 
-    if (!fid) {
-      console.error('FID not provided');
-      return res.status(400).json({ error: 'FID is required' });
+    if (!sessionId || !fid) {
+      console.error('Session ID or FID not provided');
+      return res.status(400).json({ error: 'Session ID and FID are required' });
     }
 
-    console.log('Received FID:', fid);
+    console.log(`Starting game for sessionId: ${sessionId} and FID: ${fid}`);
 
-    // Create a new session
-    const sessionId = require('crypto').randomUUID();
-    console.log('New session created with sessionId:', sessionId);
+    // Fetch the Pokémon data
+    let pokemonData, wrongPokemonName;
+    try {
+      pokemonData = await fetchPokemonData();
+      [wrongPokemonName] = await fetchRandomPokemonNames(1, pokemonData.pokemonName);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      throw new Error('Failed to fetch necessary data for the game');
+    }
 
-    // Get Pokémon data for the first question
-    const { pokemonName, height, weight, image, descriptionText } = await fetchPokemonData();
+    const { pokemonName, height, image } = pokemonData;
 
-    // Store the session data in Firebase
-    const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
-    await sessionRef.set({
+    console.log('Game data:', { pokemonName, height, image, wrongPokemonName });
+
+    // Randomly assign correct answer to button 1 or 2
+    const correctButtonIndex = Math.random() < 0.5 ? 1 : 2;
+    const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
+    const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
+
+    // Save session data to Firebase
+    await db.collection('leaderboard').doc(fid).collection('sessions').doc(sessionId).set({
       fid,
       sessionId,
-      correctCount: 0,
+      timestamp: new Date().toISOString(),
       totalAnswered: 0,
-      timestamp: new Date(),
+      correctCount: 0,
     });
 
-    console.log('Session stored in Firebase for FID:', fid);
+    // Properly encode the parameters for the og endpoint
+    const ogImageUrl = `${baseUrl}/api/og?` + new URLSearchParams({
+      pokemonName: pokemonName || '',
+      height: height || '',
+      image: image || ''
+    }).toString();
 
-    // Prepare to send the first question in the frame
+    // Create the game response with the question
     const html = `
-      <!DOCTYPE html>
       <html>
-      <head>
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/og?pokemonName=${pokemonName}&height=${height}&weight=${weight}" />
-        <meta property="fc:frame:button:1" content="Option 1" />
-        <meta property="fc:frame:button:2" content="Option 2" />
-        <meta property="fc:frame:button:3" content="Option 3" />
-        <meta property="fc:frame:button:4" content="Option 4" />
-        <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: Math.floor(Math.random() * 4) + 1, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
-      </head>
-      <body>
-        <p>Guess the Pokémon</p>
-      </body>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${ogImageUrl}" />
+          <meta property="fc:frame:button:1" content="${button1Content}" />
+          <meta property="fc:frame:button:2" content="${button2Content}" />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/answer?sessionId=${sessionId}&fid=${fid}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    // Send the HTML response
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(html);
+  } catch (error) {
+    console.error('Error in start-game handler:', error);
+
+    // Provide error-specific HTML to inform the user
+    const errorHtml = `
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
+          <meta property="fc:frame:button:1" content="Try Again" />
+          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/start-game" />
+        </head>
+        <body></body>
       </html>
     `;
 
     res.setHeader('Content-Type', 'text/html');
-    return res.status(200).send(html);
-
-  } catch (error) {
-    console.error('Error in start-game handler:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    res.status(500).send(errorHtml);
   }
 }

@@ -1,7 +1,13 @@
 import Head from 'next/head';
+import { v4 as uuidv4 } from 'uuid'; // For generating session IDs
 
 export default function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+
+  // Generate a new session ID for each game
+  const sessionId = uuidv4();
+  const fid = 'fakeFID123'; // Replace with actual FID retrieval logic
+
   const shareText = encodeURIComponent(`Check out this awesome Pokémon Guessing Game!\n\nFrame by @aaronv.eth`);
   const shareLink = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
 
@@ -16,7 +22,10 @@ export default function Home() {
         <meta property="fc:frame" content="vNext" />
         <meta property="fc:frame:image" content={`${baseUrl}/pokeMain.png`} />
         <meta property="fc:frame:button:1" content="Play Game" />
-        <meta property="fc:frame:button:1:post_url" content={`${baseUrl}/api/start-game`} />
+        <meta
+          property="fc:frame:button:1:post_url"
+          content={`${baseUrl}/api/start-game?sessionId=${sessionId}&fid=${fid}`}
+        />
         <meta property="fc:frame:button:2" content="View Leaderboard" />
         <meta property="fc:frame:button:2:post_url" content={`${baseUrl}/api/leaderboard`} />
         <meta property="fc:frame:button:3" content="Share" />
