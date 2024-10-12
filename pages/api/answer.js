@@ -54,15 +54,19 @@ export default async function handler(req, res) {
         <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent(message)}" />
+          <meta property="fc:frame:message" content="${message}" />
           <meta property="fc:frame:button:1" content="Next Question" />
           <meta property="fc:frame:button:2" content="Share" />
           <meta property="fc:frame:button:2:action" content="link" />
           <meta property="fc:frame:button:2:target" content="${shareUrl}" />
-          <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/start-game" />
           <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, totalAnswered: newTotalAnswered, correctCount: newCorrectCount, stage: 'answer' }))}" />
         </head>
-        <body></body>
+        <body>
+          <h1>Answer Feedback: ${message}</h1>
+          <p>Correct Answers: ${newCorrectCount}</p>
+          <p>Total Answered: ${newTotalAnswered}</p>
+        </body>
         </html>
       `;
     } else {
