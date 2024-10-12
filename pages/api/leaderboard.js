@@ -1,10 +1,5 @@
 import { db } from '../../lib/firebase';
-import { ImageResponse } from '@vercel/og';
 import fetch from 'node-fetch';
-
-export const config = {
-  runtime: 'edge',
-};
 
 const PINATA_HUB_API = 'https://hub.pinata.cloud/v1';
 const USER_DATA_TYPES = { USERNAME: 6 };
@@ -41,38 +36,7 @@ export default async function handler(req, res) {
       .map((item, index) => `${index + 1}. ${item}`)
       .join('<br>');
 
-    // Generate the leaderboard as an image
-    const ogImage = new ImageResponse(
-      (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#1e2a38',
-            color: '#fff',
-            padding: '40px',
-            fontFamily: 'Arial, sans-serif',
-          }}
-        >
-          <h1 style={{ fontSize: '48px', marginBottom: '20px', color: '#FFD700' }}>Leaderboard</h1>
-          <div style={{ fontSize: '32px', lineHeight: '1.5', textAlign: 'center' }}>
-            {leaderboardItems.map((item, index) => (
-              <p key={index}>{index + 1}. {item}</p>
-            ))}
-          </div>
-        </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-      }
-    );
-
-    // Return the Farcaster frame with meta tags
+    // Return the HTML response with Farcaster frame meta tags
     const html = `
       <html>
         <head>
