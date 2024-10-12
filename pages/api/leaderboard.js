@@ -1,16 +1,20 @@
 import { db } from '../../lib/firebase';
 import { ImageResponse } from '@vercel/og';
+import { getFarcasterProfileName } from './pokeService'; // Assuming this is the file path
 
 export default async function handler(req, res) {
+  console.log('Accessing leaderboard API');
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
 
   try {
     // Fetch leaderboard data from Firebase, limit to top 10 players
     const leaderboardRef = db.collection('leaderboard');
     const snapshot = await leaderboardRef.orderBy('correctCount', 'desc').limit(10).get();
+    console.log('Firebase snapshot:', snapshot.empty ? 'No data' : 'Data found');
 
     // If no entries exist in the leaderboard
     if (snapshot.empty) {
+      console.log('No leaderboard entries, sending placeholder');
       return new ImageResponse(
         (
           <div
@@ -40,9 +44,16 @@ export default async function handler(req, res) {
 
     // Fetch usernames and scores only if leaderboard is not empty
     const topPlayers = snapshot.docs.map((doc) => doc.data());
-    const leaderboardItems = topPlayers.map((player, index) => (
-      `${index + 1}. FID: ${player.FID} - Correct: ${player.correctCount} / Total: ${player.totalAnswered}`
-    ));
+    console.log('Top players from Firebase:', topPlayers);
+
+    // Fetch usernames from Pinata if FIDs are available
+    const leaderboardItems = await Promise.all(
+      topPlayers.map(async (player, index) => {
+        const username = await getFarcasterProfileName(player.FID);
+        console.log(`Fetched username for FID ${player.FID}:`, username);
+        return `${index + 1}. ${username}: Correct: ${player.correctCount}, Total: ${player.totalAnswered}`;
+      })
+    );
 
     // Convert leaderboard items into a string for display
     const leaderboardContent = leaderboardItems.join('<br>');
@@ -79,7 +90,6 @@ export default async function handler(req, res) {
     );
   } catch (error) {
     console.error('Error generating leaderboard:', error);
-
     return new ImageResponse(
       (
         <div
