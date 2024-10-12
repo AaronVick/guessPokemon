@@ -1,13 +1,12 @@
 import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 import { db } from '../../lib/firebase';
+import { v4 as uuidv4 } from 'uuid'; // Generate unique session IDs
 
 export default async function handler(req, res) {
   console.log('Start Game API accessed');
 
-  // Base URL for the frame
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
 
-  // Check if the request method is POST
   if (req.method === 'POST') {
     const { untrustedData } = req.body;
     const fid = untrustedData?.fid;
@@ -20,7 +19,6 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Log the FID to check if it's correct
       console.log(`Starting game for FID: ${fid}`);
 
       // Fetch Pokémon data
@@ -35,29 +33,32 @@ export default async function handler(req, res) {
 
       const { pokemonName, height, image } = pokemonData;
 
-      // Save game session to Firebase
-      await db.collection('leaderboard').doc(fid.toString()).set({
-        FID: fid,
+      // Generate a new unique session ID for this game
+      const sessionId = uuidv4();
+
+      // Save game session to Firebase under FID/sessions/sessionId
+      const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
+      await sessionRef.set({
+        sessionId: sessionId,
         correctCount: 0,
         totalAnswered: 0,
-        timestamp: new Date(),
+        timestamp: new Date(), // Store as a proper timestamp
       });
 
-      // Generate buttons for guessing game
+      console.log(`New session created with sessionId: ${sessionId}`);
+
       const correctButtonIndex = Math.random() < 0.5 ? 1 : 2;
       const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
       const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
-      // Generate image URL for the OG response
       const ogImageUrl = `${baseUrl}/api/og?` + new URLSearchParams({
         pokemonName: pokemonName || '',
         height: height || '',
         image: image || ''
       }).toString();
 
-      // Build HTML response for the frame
+      // Pass the `sessionId` along with the game state for future requests
       const html = `
-        <!DOCTYPE html>
         <html>
         <head>
           <meta property="fc:frame" content="vNext" />
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
         </head>
         <body></body>
         </html>

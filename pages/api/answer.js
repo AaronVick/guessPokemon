@@ -1,68 +1,82 @@
 import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 
 export default async function handler(req, res) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
-  const { untrustedData } = req.body;
-  const buttonIndex = untrustedData?.buttonIndex;
-  const fid = untrustedData?.fid; // Assuming FID is passed
-  const state = JSON.parse(decodeURIComponent(untrustedData?.state || '{}'));
-  const { correctTitle, correctIndex, totalAnswered = 0, correctCount = 0, stage } = state;
+  console.log('Answer API accessed');
+
+  if (req.method !== 'POST') {
+    console.error(`Method ${req.method} not allowed`);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   try {
-    let html;
-    if (stage === 'question' && buttonIndex !== undefined) {
-      const newTotalAnswered = totalAnswered + 1;
-      const isCorrect = buttonIndex === correctIndex;
-      const newCorrectCount = correctCount + (isCorrect ? 1 : 0);
-      const message = isCorrect 
-        ? `Correct! The answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`
-        : `Wrong. The correct answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`;
+    const { untrustedData } = req.body;
+    const fid = untrustedData?.fid;
+    const sessionId = untrustedData?.sessionId; // Get session ID from request
+    const selectedButton = untrustedData?.selectedButton;
+    const correctIndex = untrustedData?.correctIndex;
+    const correctTitle = untrustedData?.correctTitle;
 
-      // Save progress to Firebase
-      await db.collection('leaderboard').doc(fid).update({
-        correctCount: newCorrectCount,
-        totalAnswered: newTotalAnswered,
-      });
+    console.log('Received FID:', fid);
+    console.log('Received sessionId:', sessionId);
+    console.log('Selected button:', selectedButton);
+    console.log('Correct button index:', correctIndex);
+    console.log('Correct answer title:', correctTitle);
 
-      const shareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
-      const shareUrl = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
-
-      html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent(message)}" />
-    <meta property="fc:frame:button:1" content="Next Question" />
-    <meta property="fc:frame:button:2" content="Share" />
-    <meta property="fc:frame:button:2:action" content="link" />
-    <meta property="fc:frame:button:2:target" content="${shareUrl}" />
-    <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
-    <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ totalAnswered: newTotalAnswered, correctCount: newCorrectCount, stage: 'answer' }))}" />
-  </head>
-  <body></body>
-</html>`;
+    // Ensure that FID and sessionId are present
+    if (!fid || !sessionId) {
+      console.error('FID or sessionId missing from request');
+      return res.status(400).json({ error: 'FID and sessionId are required to answer the game' });
     }
 
+    // Check if the selected button matches the correct button
+    const isCorrect = selectedButton === correctIndex;
+    console.log('Is the answer correct?', isCorrect);
+
+    // Fetch the specific game session from Firebase using the sessionId
+    const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
+    const sessionSnapshot = await sessionRef.get();
+    
+    if (!sessionSnapshot.exists) {
+      console.error('Game session not found for FID:', fid);
+      return res.status(404).json({ error: 'Game session not found' });
+    }
+
+    const sessionData = sessionSnapshot.data();
+    const newCorrectCount = isCorrect ? sessionData.correctCount + 1 : sessionData.correctCount;
+    const newTotalAnswered = sessionData.totalAnswered + 1;
+
+    console.log('New correct count:', newCorrectCount);
+    console.log('New total answered:', newTotalAnswered);
+
+    // Update the specific game session in Firebase
+    await sessionRef.update({
+      correctCount: newCorrectCount,
+      totalAnswered: newTotalAnswered,
+      timestamp: new Date(),
+    });
+
+    // Send back the result
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content="https://some-image-url/answer-image" />
+        <meta property="fc:frame:button:1" content="Play Again" />
+        <meta property="fc:frame:button:2" content="Share" />
+        <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
+      </head>
+      <body>
+        <p>${isCorrect ? 'Correct!' : 'Incorrect'} Answer: ${correctTitle}</p>
+      </body>
+      </html>
+    `;
+
     res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(html);
+    return res.status(200).send(html);
+
   } catch (error) {
     console.error('Error in answer handler:', error);
-
-    const errorHtml = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${baseUrl}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
-    <meta property="fc:frame:button:1" content="Try Again" />
-    <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
-  </head>
-  <body></body>
-</html>`;
-
-    res.setHeader('Content-Type', 'text/html');
-    res.status(500).send(errorHtml);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
