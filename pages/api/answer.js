@@ -55,24 +55,27 @@ export default async function handler(req, res) {
       timestamp: new Date(),
     });
 
-    // Create message for feedback
+    // Feedback message
     const message = isCorrect
       ? `Correct! The answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`
       : `Wrong. The correct answer was ${correctTitle}. You've guessed ${newCorrectCount} out of ${newTotalAnswered} correctly.`;
 
+    // Ensure dynamic values are URL-safe
+    const encodedMessage = encodeURIComponent(message);
+    const encodedShareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
+    const shareUrl = `https://warpcast.com/~/compose?text=${encodedShareText}`;
+
     // Generate HTML response
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
-    const shareText = encodeURIComponent(`I've guessed ${newCorrectCount} Pokémon correctly out of ${newTotalAnswered} questions! Can you beat my score?\n\nFrame by @aaronv.eth`);
-    const shareUrl = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
-
+    
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:message" content="${message}" />
+        <meta property="fc:frame:message" content="${encodedMessage}" />
         <meta property="fc:frame:button:1" content="Next Question" />
-        <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game?fid=${fid}&sessionId=${sessionId}" />
+        <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game?fid=${encodeURIComponent(fid)}&sessionId=${encodeURIComponent(sessionId)}" />
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:button:2:action" content="link" />
         <meta property="fc:frame:button:2:target" content="${shareUrl}" />
