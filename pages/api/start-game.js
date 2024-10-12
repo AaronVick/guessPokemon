@@ -14,22 +14,19 @@ export default async function handler(req, res) {
     const { untrustedData } = req.body;
     console.log('Received POST request to /api/start-game');
 
-    // Try to pull FID from untrustedData
     const fid = untrustedData?.fid;
-    
     if (!fid) {
-      console.error('FID not provided in untrusted data');
+      console.error('FID not provided');
       return res.status(400).json({ error: 'Valid FID is required' });
     }
 
-    // Create a sessionId if not provided
+    // Generate or use existing session ID
     let sessionId = untrustedData?.sessionId;
-
     if (!sessionId) {
-      sessionId = uuidv4(); // Generate a unique session ID
+      sessionId = uuidv4(); // Create new session ID
       console.log(`New session created with sessionId: ${sessionId}`);
-      
-      // Create a new session in Firestore under the user's FID
+
+      // Store session data in Firestore
       const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
       await sessionRef.set({
         correctCount: 0,
@@ -38,48 +35,69 @@ export default async function handler(req, res) {
         timestamp: new Date(),
       });
     } else {
-      console.log(`Existing session used with sessionId: ${sessionId}`);
+      console.log(`Using existing session with sessionId: ${sessionId}`);
     }
 
-    // Fetch Pokémon data for the first question
-    const pokemonData = await fetchPokemonData();
-    const wrongPokemonNames = await fetchRandomPokemonNames(1, pokemonData.pokemonName);
+    // Fetch Pokémon data
+    let pokemonData, wrongPokemonName;
+    try {
+      pokemonData = await fetchPokemonData();
+      [wrongPokemonName] = await fetchRandomPokemonNames(1, pokemonData.pokemonName);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      throw new Error('Failed to fetch necessary data for the game');
+    }
 
-    const questionData = {
-      pokemonName: pokemonData.pokemonName,
-      height: pokemonData.height,
-      image: pokemonData.image,
-      wrongPokemonName: wrongPokemonNames[0],
-    };
+    const { pokemonName, height, image } = pokemonData;
 
-    console.log('Game data:', questionData);
+    console.log('Game data:', { pokemonName, height, image, wrongPokemonName });
 
-    // Present the first question
+    // Randomly assign the correct answer to button 1 or 2
+    const correctButtonIndex = Math.random() < 0.5 ? 1 : 2;
+    const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
+    const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
+
+    // Create the question response HTML
     const html = `
       <!DOCTYPE html>
       <html>
-      <head>
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${questionData.image}" />
-        <meta property="fc:frame:input:question" content="Guess the Pokémon's name!" />
-        <meta property="fc:frame:button:1" content="${questionData.pokemonName}" />
-        <meta property="fc:frame:button:2" content="${questionData.wrongPokemonName}" />
-        <meta property="fc:frame:button:1:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-        <meta property="fc:frame:button:2:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctIndex: 1, stage: 'question' }))}" />
-      </head>
-      <body>
-        <h1>Guess the Pokémon!</h1>
-        <img src="${questionData.image}" alt="Pokémon Image" />
-        <p>Can you guess the Pokémon?</p>
-      </body>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${image}" />
+          <meta property="fc:frame:input:question" content="Guess the Pokémon's name!" />
+          <meta property="fc:frame:button:1" content="${button1Content}" />
+          <meta property="fc:frame:button:2" content="${button2Content}" />
+          <meta property="fc:frame:button:1:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
+          <meta property="fc:frame:button:2:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+        </head>
+        <body>
+          <h1>Guess the Pokémon!</h1>
+          <img src="${image}" alt="Pokémon Image" />
+          <p>Can you guess the Pokémon?</p>
+        </body>
       </html>
     `;
 
     res.setHeader('Content-Type', 'text/html');
-    return res.status(200).send(html);
+    res.status(200).send(html);
   } catch (error) {
     console.error('Error starting game:', error);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    
+    // Provide error-specific HTML
+    const errorHtml = `
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
+          <meta property="fc:frame:button:1" content="Try Again" />
+          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.status(500).send(errorHtml);
   }
 }
