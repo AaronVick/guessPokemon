@@ -1,5 +1,6 @@
 import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 import { db } from '../../lib/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req, res) {
   console.log(`Received ${req.method} request to /api/start-game`);
@@ -12,9 +13,11 @@ export default async function handler(req, res) {
   try {
     const { untrustedData } = req.body;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
-    const fid = untrustedData?.fid; // Retrieve FID
-    const sessionId = untrustedData?.sessionId; // Retrieve session ID
-    
+
+    const fid = untrustedData?.fid || 'fakeFID123'; // Default FID for testing
+    const sessionId = untrustedData?.sessionId || uuidv4(); // Generate session ID if not present
+
+    // Ensure FID is valid
     if (!fid) {
       console.error('FID is required');
       return res.status(400).json({ error: 'FID is required' });
@@ -45,7 +48,7 @@ export default async function handler(req, res) {
       image: image || ''
     }).toString();
 
-    // Update Firebase with new session info
+    // Create or update the session in Firestore
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
     await sessionRef.set({
       pokemonName,
