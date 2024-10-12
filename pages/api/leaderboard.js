@@ -1,28 +1,5 @@
 import { db } from '../../lib/firebase';
 import { ImageResponse } from '@vercel/og';
-import fetch from 'node-fetch';
-
-const PINATA_HUB_API = 'https://hub.pinata.cloud/v1';
-const USER_DATA_TYPES = { USERNAME: 6 };
-
-// Function to fetch Farcaster username with a timeout
-async function getFarcasterProfileName(fid) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000); // 5-second timeout
-
-  try {
-    const response = await fetch(`${PINATA_HUB_API}/userDataByFid?fid=${fid}&user_data_type=${USER_DATA_TYPES.USERNAME}`, {
-      signal: controller.signal,
-    });
-    const data = await response.json();
-    return data?.data?.userDataBody?.value || 'Unknown User';
-  } catch (error) {
-    console.error('Error fetching username from Pinata:', error);
-    return 'Unknown User'; // Fallback in case of timeout or error
-  } finally {
-    clearTimeout(timeout); // Clear timeout after completion
-  }
-}
 
 export default async function handler(req, res) {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
@@ -61,19 +38,14 @@ export default async function handler(req, res) {
       );
     }
 
-    // Fetch usernames from Pinata for each player
+    // Fetch usernames and scores only if leaderboard is not empty
     const topPlayers = snapshot.docs.map((doc) => doc.data());
-    const leaderboardItems = await Promise.all(
-      topPlayers.map(async (player) => {
-        const username = await getFarcasterProfileName(player.FID);
-        return `${username}: ${player.correctCount} / ${player.totalAnswered}`;
-      })
-    );
+    const leaderboardItems = topPlayers.map((player, index) => (
+      `${index + 1}. FID: ${player.FID} - Correct: ${player.correctCount} / Total: ${player.totalAnswered}`
+    ));
 
     // Convert leaderboard items into a string for display
-    const leaderboardContent = leaderboardItems
-      .map((item, index) => `${index + 1}. ${item}`)
-      .join('<br>');
+    const leaderboardContent = leaderboardItems.join('<br>');
 
     // Return the leaderboard image with the top 10 players
     return new ImageResponse(
@@ -95,7 +67,7 @@ export default async function handler(req, res) {
           <h1 style={{ fontSize: '48px', marginBottom: '20px', color: '#FFD700' }}>Leaderboard</h1>
           <div style={{ fontSize: '32px', lineHeight: '1.5', textAlign: 'center' }}>
             {leaderboardItems.map((item, index) => (
-              <p key={index}>{index + 1}. {item}</p>
+              <p key={index}>{item}</p>
             ))}
           </div>
         </div>
