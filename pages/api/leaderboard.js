@@ -1,6 +1,6 @@
 import { db } from '../../lib/firebase';
 import { ImageResponse } from '@vercel/og';
-import { getFarcasterProfileName } from './pokeService'; // Assuming this is the file path
+import { getFarcasterProfileName } from './pokeService'; // Adjust path if necessary
 
 export default async function handler(req, res) {
   console.log('Accessing leaderboard API');
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const snapshot = await leaderboardRef.orderBy('correctCount', 'desc').limit(10).get();
     console.log('Firebase snapshot:', snapshot.empty ? 'No data' : 'Data found');
 
-    // If no entries exist in the leaderboard
+    // If no entries exist in the leaderboard, return placeholder
     if (snapshot.empty) {
       console.log('No leaderboard entries, sending placeholder');
       return new ImageResponse(
@@ -46,12 +46,18 @@ export default async function handler(req, res) {
     const topPlayers = snapshot.docs.map((doc) => doc.data());
     console.log('Top players from Firebase:', topPlayers);
 
-    // Fetch usernames from Pinata if FIDs are available
+    // Fetch usernames from Pinata with a fallback if the API call takes too long
     const leaderboardItems = await Promise.all(
       topPlayers.map(async (player, index) => {
-        const username = await getFarcasterProfileName(player.FID);
-        console.log(`Fetched username for FID ${player.FID}:`, username);
-        return `${index + 1}. ${username}: Correct: ${player.correctCount}, Total: ${player.totalAnswered}`;
+        try {
+          const username = await getFarcasterProfileName(player.FID);
+          console.log(`Fetched username for FID ${player.FID}:`, username);
+          return `${index + 1}. ${username}: Correct: ${player.correctCount}, Total: ${player.totalAnswered}`;
+        } catch (error) {
+          console.error(`Error fetching username for FID ${player.FID}:`, error);
+          // Fallback to showing just the FID if the Pinata call fails or times out
+          return `${index + 1}. FID: ${player.FID}: Correct: ${player.correctCount}, Total: ${player.totalAnswered}`;
+        }
       })
     );
 
