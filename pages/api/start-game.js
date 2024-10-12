@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
-    // Create the question response HTML with a split layout for the question and buttons
+    // Create the question response HTML with a split layout for the question and image
     const html = `
       <!DOCTYPE html>
       <html>
@@ -69,9 +69,11 @@ export default async function handler(req, res) {
         <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
         <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
         <style>
-          body { display: flex; justify-content: space-between; align-items: center; font-family: Arial, sans-serif; }
-          .question-container { width: 45%; }
-          .image-container { width: 45%; }
+          body { display: flex; justify-content: space-between; align-items: center; font-family: Arial, sans-serif; height: 100vh; margin: 0; }
+          .question-container { width: 50%; padding: 20px; text-align: center; }
+          .image-container { width: 50%; display: flex; justify-content: center; align-items: center; background-color: #f4f4f4; }
+          img { max-width: 100%; height: auto; }
+          button { padding: 10px 20px; font-size: 18px; margin: 10px; cursor: pointer; }
         </style>
       </head>
       <body>
@@ -81,7 +83,7 @@ export default async function handler(req, res) {
           <button>${button2Content}</button>
         </div>
         <div class="image-container">
-          <img src="${image}" alt="${pokemonName}" width="300" />
+          <img src="${image}" alt="${pokemonName}" />
         </div>
       </body>
       </html>
