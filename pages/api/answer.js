@@ -12,14 +12,12 @@ export default async function handler(req, res) {
     const { untrustedData } = req.body;
     console.log('Received data:', untrustedData);
 
-    // Parse the state passed from the previous frame
     const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
-    const sessionId = state.sessionId;  // Extract sessionId from the state
-    const selectedButton = untrustedData.buttonIndex;  // Get which button was clicked
-    const correctIndex = state.correctIndex;  // Extract correct index from the state
+    const sessionId = state.sessionId; 
+    const selectedButton = untrustedData.buttonIndex;
+    const correctIndex = state.correctIndex;
 
-    // Ensure all required data is present
     if (!fid || !sessionId || typeof selectedButton === 'undefined' || typeof correctIndex === 'undefined') {
       console.error('Missing required data:', { fid, sessionId, selectedButton, correctIndex });
       return res.status(400).json({ error: 'Missing required data' });
@@ -30,7 +28,6 @@ export default async function handler(req, res) {
     console.log('Selected button:', selectedButton);
     console.log('Correct button index:', correctIndex);
 
-    // Fetch the specific game session from Firebase using the sessionId
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
     const sessionSnapshot = await sessionRef.get();
     
@@ -47,27 +44,31 @@ export default async function handler(req, res) {
     console.log('New correct count:', newCorrectCount);
     console.log('New total answered:', newTotalAnswered);
 
-    // Update the specific game session in Firebase
     await sessionRef.update({
       correctCount: newCorrectCount,
       totalAnswered: newTotalAnswered,
-      timestamp: new Date(), // Update timestamp with the latest interaction
+      timestamp: new Date(),
     });
 
-    // Prepare the HTML response with the result
+    // Generate feedback using og.js with the updated counts
+    const message = isCorrect ? 'Correct!' : 'Incorrect';
+    const ogUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/og?` + new URLSearchParams({
+      message,
+      correctCount: newCorrectCount,
+      totalAnswered: newTotalAnswered
+    }).toString();
+
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="https://some-image-url/answer-image" />
+        <meta property="fc:frame:image" content="${ogUrl}" />
         <meta property="fc:frame:button:1" content="Play Again" />
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
       </head>
-      <body>
-        <p>${isCorrect ? 'Correct!' : 'Incorrect'} Answer: ${state.correctTitle}</p>
-      </body>
+      <body></body>
       </html>
     `;
 
