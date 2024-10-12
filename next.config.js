@@ -1,7 +1,7 @@
 module.exports = {
     reactStrictMode: true,
     images: {
-      domains: ['raw.githubusercontent.com', 'pokeapi.co'],
+      domains: ['raw.githubusercontent.com', 'pokeapi.co', 'pinata.cloud'],
     },
   };
   

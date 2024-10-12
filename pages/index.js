@@ -16,10 +16,12 @@ export default function Home() {
         <meta property="fc:frame" content="vNext" />
         <meta property="fc:frame:image" content={`${baseUrl}/pokeMain.png`} />
         <meta property="fc:frame:button:1" content="Play Game" />
-        <meta property="fc:frame:button:2" content="Share" />
-        <meta property="fc:frame:button:2:action" content="link" />
-        <meta property="fc:frame:button:2:target" content={shareLink} />
-        <meta property="fc:frame:post_url" content={`${baseUrl}/api/start-game`} />
+        <meta property="fc:frame:button:1:post_url" content={`${baseUrl}/api/start-game`} />
+        <meta property="fc:frame:button:2" content="View Leaderboard" />
+        <meta property="fc:frame:button:2:post_url" content={`${baseUrl}/api/leaderboard`} />
+        <meta property="fc:frame:button:3" content="Share" />
+        <meta property="fc:frame:button:3:action" content="link" />
+        <meta property="fc:frame:button:3:target" content={shareLink} />
       </Head>
       <h1>Pokémon Guessing Game</h1>
       <img

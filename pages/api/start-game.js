@@ -1,4 +1,5 @@
 import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
+import { db } from '../../lib/firebase'; // Assuming you have a Firebase setup
 
 export default async function handler(req, res) {
   console.log(`Received ${req.method} request to /api/start-game`);
@@ -10,6 +11,7 @@ export default async function handler(req, res) {
 
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
+    const { fid } = req.body; // FID passed in the request
     console.log(`Base URL: ${baseUrl}`);
 
     // Fetch the Pokémon data
@@ -37,6 +39,14 @@ export default async function handler(req, res) {
       height: height || '',
       image: image || ''
     }).toString();
+
+    // Save game session to Firebase
+    await db.collection('leaderboard').add({
+      FID: fid, // Save the Farcaster ID
+      correctCount: 0,
+      totalAnswered: 0,
+      timestamp: new Date(),
+    });
 
     // Create the game response with the question
     const html = `

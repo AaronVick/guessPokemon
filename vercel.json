@@ -36,13 +36,21 @@
       }, 
       "dest": "/api/start-game" 
     },
+    {
+      "src": "/api/leaderboard",  // Add this route for leaderboard
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/api/leaderboard"
+    },
     { 
       "src": "/(.*)", 
       "headers": { 
         "Access-Control-Allow-Origin": "*", 
         "Cache-Control": "public, max-age=31536000, immutable" 
       }, 
-      "dest": "/$1" 
+      "dest": "/$1"
     }
   ]
 }

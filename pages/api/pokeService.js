@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
+// Function to fetch Pokémon data
 export async function fetchPokemonData() {
   try {
     const pokemonId = Math.floor(Math.random() * 898) + 1; // 898 Pokémon as of Gen 8
@@ -32,6 +33,7 @@ export async function fetchPokemonData() {
   }
 }
 
+// Function to fetch random Pokémon names
 export async function fetchRandomPokemonNames(count = 1, excludeName = '') {
   try {
     const response = await axios.get(`${BASE_URL}/pokemon?limit=898`);
@@ -42,6 +44,41 @@ export async function fetchRandomPokemonNames(count = 1, excludeName = '') {
     return shuffledPokemon.slice(0, count).map((pokemon) => pokemon.name);
   } catch (error) {
     console.error('Error fetching random Pokémon names:', error);
-    return ['pikachu', 'charizard', 'bulbasaur']; // Fallback names
+    return [
+      'pikachu', 
+      'charizard', 
+      'bulbasaur', 
+      'squirtle', 
+      'jigglypuff', 
+      'meowth', 
+      'psyduck', 
+      'eevee', 
+      'snorlax', 
+      'dragonite',
+      'mewtwo', 
+      'gyarados', 
+      'gengar', 
+      'arcanine', 
+      'lapras',
+      'machamp', 
+      'blastoise', 
+      'venusaur', 
+      'raichu', 
+      'alakazam'
+    ];
+  }
+}
+
+// Function to fetch Farcaster username using Pinata API
+export async function getFarcasterProfileName(fid) {
+  const PINATA_HUB_API = 'https://hub.pinata.cloud/v1';
+  const USER_DATA_TYPES = { USERNAME: 6 };
+  try {
+    const response = await axios.get(`${PINATA_HUB_API}/userDataByFid?fid=${fid}&user_data_type=${USER_DATA_TYPES.USERNAME}`);
+    const data = response.data;
+    return data?.data?.userDataBody?.value || 'Unknown User';
+  } catch (error) {
+    console.error('Error fetching username from Pinata:', error);
+    return 'Unknown User';
   }
 }
