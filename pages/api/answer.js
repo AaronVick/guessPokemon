@@ -1,5 +1,5 @@
 import { db } from '../../lib/firebase';
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import for pokeService
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
 
 export default async function handler(req, res) {
   console.log('Answer API accessed');
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
     const state = JSON.parse(decodeURIComponent(untrustedData.state || '{}'));
     const fid = untrustedData?.fid;
-    const sessionId = state.sessionId; 
+    const sessionId = state.sessionId;
     const selectedButton = untrustedData.buttonIndex;
     const correctIndex = state.correctIndex;
 
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
     const sessionSnapshot = await sessionRef.get();
-    
+
     if (!sessionSnapshot.exists) {
       console.error('Game session not found for FID:', fid);
       return res.status(404).json({ error: 'Game session not found' });
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     // Feedback message
     const message = isCorrect ? 'Correct!' : 'Incorrect';
 
-    // Create response HTML (without image, just feedback text and next action)
+    // Create response HTML with properly encoded state
     const html = `
       <!DOCTYPE html>
       <html>
@@ -67,6 +67,7 @@ export default async function handler(req, res) {
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:button:2:action" content="link" />
         <meta property="fc:frame:button:2:target" content="https://warpcast.com/~/compose?text=${encodeURIComponent('I just played this awesome Pokémon guessing game!')}" />
+        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: state.correctTitle, correctIndex: state.correctIndex, totalAnswered: newTotalAnswered, correctCount: newCorrectCount, stage: 'answer' }))}" />
       </head>
       <body>
         <h1>Answer Feedback: ${message}</h1>
