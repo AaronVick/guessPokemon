@@ -1,55 +1,58 @@
 {
   "version": 2,
   "builds": [
-    { "src": "package.json", "use": "@vercel/next" }
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
   ],
   "routes": [
-    { 
-      "src": "/api/frame", 
-      "headers": { 
-        "Access-Control-Allow-Origin": "*", 
-        "Cache-Control": "public, max-age=0, must-revalidate" 
-      }, 
-      "dest": "/api/frame" 
-    },
-    { 
-      "src": "/api/og", 
-      "headers": { 
-        "Access-Control-Allow-Origin": "*", 
-        "Cache-Control": "public, max-age=0, must-revalidate" 
-      }, 
-      "dest": "/api/og" 
-    },
-    { 
-      "src": "/api/answer", 
-      "headers": { 
-        "Access-Control-Allow-Origin": "*", 
-        "Cache-Control": "public, max-age=0, must-revalidate" 
-      }, 
-      "dest": "/api/answer" 
-    },
-    { 
-      "src": "/api/start-game", 
-      "headers": { 
-        "Access-Control-Allow-Origin": "*", 
-        "Cache-Control": "public, max-age=0, must-revalidate" 
-      }, 
-      "dest": "/api/start-game" 
+    {
+      "src": "/api/frame",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/api/frame"
     },
     {
-      "src": "/api/leaderboard",  // Add this route for leaderboard
+      "src": "/api/og",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/api/og"
+    },
+    {
+      "src": "/api/answer",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/api/answer"
+    },
+    {
+      "src": "/api/start-game",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "dest": "/api/start-game"
+    },
+    {
+      "src": "/api/leaderboard",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "public, max-age=0, must-revalidate"
       },
       "dest": "/api/leaderboard"
     },
-    { 
-      "src": "/(.*)", 
-      "headers": { 
-        "Access-Control-Allow-Origin": "*", 
-        "Cache-Control": "public, max-age=31536000, immutable" 
-      }, 
+    {
+      "src": "/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=31536000, immutable"
+      },
       "dest": "/$1"
     }
   ]
