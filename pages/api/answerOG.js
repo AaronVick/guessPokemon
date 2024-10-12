@@ -6,9 +6,9 @@ export const config = {
 
 export default function handler(req) {
   const { searchParams } = new URL(req.url);
-  const message = searchParams.get('message') || 'Answer Feedback';
-  const correctCount = searchParams.get('correctCount') || '0'; // Default to 0 if not provided
-  const totalAnswered = searchParams.get('totalAnswered') || '0'; // Default to 0 if not provided
+  const message = searchParams.get('message');
+  const correctCount = searchParams.get('correctCount') || '0';
+  const totalAnswered = searchParams.get('totalAnswered') || '0';
 
   try {
     return new ImageResponse(
@@ -27,6 +27,8 @@ export default function handler(req) {
           }}
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>{message}</h1>
+          <p style={{ fontSize: '36px', marginBottom: '10px' }}>Correct Answers: {correctCount}</p>
+          <p style={{ fontSize: '36px' }}>Total Answered: {totalAnswered}</p>
         </div>
       ),
       {
