@@ -1,4 +1,5 @@
 import { db } from '../../lib/firebase';
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import for pokeService
 
 export default async function handler(req, res) {
   console.log('Answer API accessed');
@@ -50,25 +51,23 @@ export default async function handler(req, res) {
       timestamp: new Date(),
     });
 
-    // Generate feedback using og.js with the updated counts
+    // Generate feedback (without image)
     const message = isCorrect ? 'Correct!' : 'Incorrect';
-    const ogUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/og?` + new URLSearchParams({
-      message,
-      correctCount: newCorrectCount,
-      totalAnswered: newTotalAnswered
-    }).toString();
-
     const html = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${ogUrl}" />
+        <meta property="fc:frame:message" content="${message}" />
         <meta property="fc:frame:button:1" content="Play Again" />
         <meta property="fc:frame:button:2" content="Share" />
         <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/start-game" />
       </head>
-      <body></body>
+      <body>
+        <p>Answer Feedback: ${message}</p>
+        <p>Correct Answers: ${newCorrectCount}</p>
+        <p>Total Answered: ${newTotalAnswered}</p>
+      </body>
       </html>
     `;
 

@@ -1,5 +1,5 @@
 import { db } from '../../lib/firebase';
-import { getRandomPokemon } from '../../lib/pokeService';
+import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService'; // Adjusted import
 
 export default async function handler(req, res) {
   console.log('Start Game API accessed');
@@ -26,8 +26,8 @@ export default async function handler(req, res) {
     const sessionId = require('crypto').randomUUID();
     console.log('New session created with sessionId:', sessionId);
 
-    // Get a random Pokémon for the first question
-    const { pokemonName, correctButtonIndex } = await getRandomPokemon();
+    // Get Pokémon data for the first question
+    const { pokemonName, height, weight, image, descriptionText } = await fetchPokemonData();
 
     // Store the session data in Firebase
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
@@ -47,13 +47,13 @@ export default async function handler(req, res) {
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/og?pokemonName=${pokemonName}" />
+        <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/og?pokemonName=${pokemonName}&height=${height}&weight=${weight}" />
         <meta property="fc:frame:button:1" content="Option 1" />
         <meta property="fc:frame:button:2" content="Option 2" />
         <meta property="fc:frame:button:3" content="Option 3" />
         <meta property="fc:frame:button:4" content="Option 4" />
         <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: Math.floor(Math.random() * 4) + 1, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
       </head>
       <body>
         <p>Guess the Pokémon</p>
