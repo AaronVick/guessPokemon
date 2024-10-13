@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       sessionsSnapshot.forEach(sessionDoc => {
         const sessionData = sessionDoc.data();
         topPlayers.push({
-          username: doc.data().username, // assuming username is stored in the root document
+          username: doc.data().username || `User ${fid}`, // Use FID as fallback if username is not provided
           correctCount: sessionData.correctCount || 0,
           totalAnswered: sessionData.totalAnswered || 0,
         });

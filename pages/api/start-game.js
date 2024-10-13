@@ -10,17 +10,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { untrustedData } = req.body; // Correctly get untrustedData from the POST request
-    const fid = untrustedData?.fid; // Retrieve fid directly from untrustedData
-    const sessionId = untrustedData?.sessionId; // Get session ID passed from index.js
+    const { untrustedData } = req.body; // Get untrustedData from the POST request body
+    const fid = untrustedData?.fid; // Extract fid from untrustedData
+    const sessionId = untrustedData?.sessionId; // Extract sessionId
 
-    // Ensure both fid and sessionId are passed in the request
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
       return res.status(400).json({ error: 'FID and sessionId are required' });
     }
 
-    // Fetch Pokémon data for the game question
+    // Fetch Pokémon data
     let pokemonData, wrongPokemonName;
     try {
       pokemonData = await fetchPokemonData();
@@ -34,7 +33,7 @@ export default async function handler(req, res) {
 
     console.log('Game data:', { pokemonName, height, image, wrongPokemonName });
 
-    // Randomly assign the correct answer to button 1 or 2
+    // Randomly assign correct answer to button 1 or 2
     const correctButtonIndex = Math.random() < 0.5 ? 1 : 2;
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
@@ -56,7 +55,7 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
           <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex }))}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
         </head>
         <body></body>
       </html>

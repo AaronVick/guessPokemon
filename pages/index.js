@@ -7,11 +7,6 @@ export default function Home() {
   // Generate a new session ID for each game
   const sessionId = uuidv4();
 
-  // The fid will be dynamically retrieved from Farcaster using untrustedData
-  // This comes from Farcaster and is automatically passed when interacting with the frame
-  // When testing locally, you can hardcode or mock it for now
-  const fid = untrustedData?.fid; // Dynamically retrieved fid from Farcaster frame interaction
-
   const shareText = encodeURIComponent(`Check out this awesome Pokémon Guessing Game!\n\nFrame by @aaronv.eth`);
   const shareLink = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
 
@@ -28,7 +23,7 @@ export default function Home() {
         <meta property="fc:frame:button:1" content="Play Game" />
         <meta
           property="fc:frame:button:1:post_url"
-          content={`${baseUrl}/api/start-game?sessionId=${sessionId}&fid=${fid}`} // Passing fid here
+          content={`${baseUrl}/api/start-game?sessionId=${sessionId}`} // Only sessionId passed here; fid will come from Farcaster untrustedData
         />
         <meta property="fc:frame:button:2" content="View Leaderboard" />
         <meta property="fc:frame:button:2:post_url" content={`${baseUrl}/api/leaderboard`} />
