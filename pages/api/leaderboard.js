@@ -7,7 +7,7 @@ export const config = {
 export default async function handler(req) {
   console.log('Leaderboard API accessed');
 
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'POST') {
     console.error(`Method ${req.method} not allowed`);
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       status: 405,

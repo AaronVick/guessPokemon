@@ -23,7 +23,7 @@ export default function Home() {
         <meta property="fc:frame:button:1" content="Play Game" />
         <meta
           property="fc:frame:button:1:post_url"
-          content={`${baseUrl}/api/start-game?sessionId=${sessionId}`} // Only sessionId passed here; fid will come from Farcaster untrustedData
+          content={`${baseUrl}/api/start-game?sessionId=${sessionId}`}
         />
         <meta property="fc:frame:button:2" content="View Leaderboard" />
         <meta property="fc:frame:button:2:post_url" content={`${baseUrl}/api/leaderboard`} />
