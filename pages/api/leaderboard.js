@@ -1,52 +1,59 @@
-import { db } from '../../lib/firebase';
+export const config = {
+  runtime: 'edge',
+};
 
-export default async function handler(req, res) {
+export default async function handler(req) {
   console.log('Leaderboard API accessed');
+  console.log('Request method:', req.method);
 
-  if (req.method !== 'POST') {
-    console.error('Method not allowed');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    console.error(`Method ${req.method} not allowed`);
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+    console.log('Base URL:', baseUrl);
 
-    // Fetch the leaderboard data from the server-side API
-    const leaderboardDataResponse = await fetch(`${baseUrl}/api/leaderboardData`);
-    const leaderboardData = await leaderboardDataResponse.json();
-
-    // Format the leaderboard as HTML
-    const leaderboardHTML = leaderboardData.map((player, index) => `
-      <p>${index + 1}. ${player.username}: ${player.totalCorrect} correct answers out of ${player.totalAnswered}</p>
-    `).join('');
+    const ogImageUrl = `${baseUrl}/api/leaderboardOG`;
 
     // Add a share button
     const shareText = encodeURIComponent(`Check out the Top 10 Pokémon Guessers!\n\nFrame by @aaronv.eth`);
     const shareLink = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
 
-    // Send the HTML response with Farcaster frame properties
+    // Create HTML response
     const html = `
       <html>
       <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${baseUrl}/api/leaderboardOG" />
+        <meta property="fc:frame:image" content="${ogImageUrl}" />
         <meta property="fc:frame:button:1" content="Play Game" />
-        <meta property="fc:frame:button:1:post_url" content="${baseUrl}/api/start-game" />
+        <meta property="fc:frame:post_url" content="${baseUrl}/api/start-game" />
         <meta property="fc:frame:button:2" content="Share Leaderboard" />
         <meta property="fc:frame:button:2:action" content="link" />
         <meta property="fc:frame:button:2:target" content="${shareLink}" />
       </head>
       <body>
         <h1>Top 10 Pokémon Guessers</h1>
-        ${leaderboardHTML}
+        <p>View the leaderboard image for rankings.</p>
       </body>
       </html>
     `;
 
-    res.setHeader('Content-Type', 'text/html');
-    return res.status(200).send(html);
+    console.log('Sending HTML response');
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    });
+
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error in leaderboard handler:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
