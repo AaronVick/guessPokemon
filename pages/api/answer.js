@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       timestamp: new Date(),
     });
 
-    const message = isCorrect ? 'Correct!' : 'Wrong. The correct answer was ' + state.correctTitle;
+    const message = isCorrect ? 'Correct!' : `Wrong. The correct answer was ${state.correctTitle}`;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app';
 
     const html = `
