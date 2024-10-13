@@ -8,15 +8,19 @@ export default async function handler(req) {
   console.log('LeaderboardOG API accessed');
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
-    
-    // Fetch leaderboard data from the leaderboardData endpoint
-    const response = await fetch(`${baseUrl}/api/leaderboardData`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const { searchParams } = new URL(req.url);
+    const topPlayersJson = searchParams.get('topPlayers');
+    console.log('Received topPlayers:', topPlayersJson);
+
+    let topPlayers;
+    try {
+      topPlayers = JSON.parse(topPlayersJson);
+    } catch (error) {
+      console.error('Error parsing topPlayers:', error);
+      topPlayers = [];
     }
-    const topPlayers = await response.json();
-    console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
+
+    console.log('Parsed topPlayers:', topPlayers);
 
     return new ImageResponse(
       (

@@ -18,7 +18,13 @@ export default async function handler(req) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
     console.log('Base URL:', baseUrl);
 
-    const ogImageUrl = `${baseUrl}/api/leaderboardOG`;
+    // Fetch leaderboard data
+    console.log('Fetching leaderboard data...');
+    const leaderboardResponse = await fetch(`${baseUrl}/api/leaderboardData`);
+    const topPlayers = await leaderboardResponse.json();
+    console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
+
+    const ogImageUrl = `${baseUrl}/api/leaderboardOG?topPlayers=${encodeURIComponent(JSON.stringify(topPlayers))}`;
 
     // Add a share button
     const shareText = encodeURIComponent(`Check out the Top 10 Pokémon Guessers!\n\nFrame by @aaronv.eth`);
