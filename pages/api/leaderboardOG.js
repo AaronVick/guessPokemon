@@ -1,65 +1,41 @@
 import { ImageResponse } from '@vercel/og';
-import { db } from '../../lib/firebase'; // Assuming Firebase is initialized here
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'edge', // Keep this as edge since it’s generating the image
 };
 
 export default async function handler(req) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+
+  // Fetch leaderboard data from a server-side API
+  const leaderboardDataResponse = await fetch(`${baseUrl}/api/leaderboardData`);
+  const leaderboardData = await leaderboardDataResponse.json();
+
+  const topPlayersHTML = leaderboardData.map((player, index) => `
+    <p>${index + 1}. ${player.username}: ${player.totalCorrect} correct answers out of ${player.totalAnswered}</p>
+  `).join('');
+
+  // Generate OG image
   try {
-    // Fetch leaderboard data from Firebase
-    const leaderboardSnapshot = await db.collection('leaderboard').get();
-    let topPlayers = [];
-
-    // Loop through each FID document and their session sub-collection
-    for (const doc of leaderboardSnapshot.docs) {
-      const fid = doc.id;
-      const sessionsRef = db.collection('leaderboard').doc(fid).collection('sessions');
-      const sessionsSnapshot = await sessionsRef.get();
-      
-      let totalCorrect = 0;
-      let totalAnswered = 0;
-
-      sessionsSnapshot.forEach(sessionDoc => {
-        const sessionData = sessionDoc.data();
-        totalCorrect += sessionData.correctCount || 0;
-        totalAnswered += sessionData.totalAnswered || 0;
-      });
-
-      topPlayers.push({
-        username: doc.data().username || `User ${fid}`,
-        totalCorrect,
-        totalAnswered,
-      });
-    }
-
-    // Sort and get the top 10 players
-    topPlayers.sort((a, b) => b.totalCorrect - a.totalCorrect);
-    topPlayers = topPlayers.slice(0, 10);
-
-    // Generate leaderboard OG image
     return new ImageResponse(
       (
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#ffffff',
-            color: '#000000',
-            fontWeight: 'bold',
+            backgroundColor: '#4CAF50',
+            color: 'white',
             width: '100%',
             height: '100%',
-            padding: '20px',
+            padding: '40px',
+            fontSize: '36px',
+            fontFamily: 'Arial, sans-serif',
           }}
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Top 10 Pokémon Guessers</h1>
-          <ol style={{ fontSize: '32px', lineHeight: '1.6' }}>
-            {topPlayers.map((player, index) => (
-              <li key={index}>
-                {player.username}: {player.totalCorrect} correct out of {player.totalAnswered}
-              </li>
-            ))}
-          </ol>
+          <div>
+            {topPlayersHTML}
+          </div>
         </div>
       ),
       {
@@ -68,10 +44,10 @@ export default async function handler(req) {
       }
     );
   } catch (error) {
-    console.error('Error generating leaderboard OG image:', error);
+    console.error('Error generating image:', error);
     return new ImageResponse(
       (
-        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ backgroundColor: 'red', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <h1>Error Generating Leaderboard</h1>
         </div>
       ),
