@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   try {
     const { untrustedData } = req.body;
     const fid = untrustedData?.fid;
-    const sessionId = req.query.sessionId; // Get sessionId from query parameters
+    const sessionId = req.query.sessionId;
 
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
@@ -74,15 +74,24 @@ export default async function handler(req, res) {
       });
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+    
+    // Properly encode the parameters for the og endpoint
+    const ogImageUrl = `${baseUrl}/api/og?` + new URLSearchParams({
+      pokemonName: pokemonName || '',
+      height: height?.toString() || '',
+      image: image || ''
+    }).toString();
+
     // Create the game response with the question
     const html = `
       <html>
         <head>
           <meta property="fc:frame" content="vNext" />
-          <meta property="fc:frame:image" content="${image}" />
+          <meta property="fc:frame:image" content="${ogImageUrl}" />
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
-          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
+          <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
           <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: sessionDoc.exists ? sessionDoc.data().totalAnswered : 0, correctCount: sessionDoc.exists ? sessionDoc.data().correctCount : 0, stage: 'question' }))}" />
         </head>
         <body></body>

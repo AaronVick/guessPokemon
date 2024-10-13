@@ -9,8 +9,8 @@ export default function handler(req) {
   const pokemonName = searchParams.get('pokemonName');
   const height = searchParams.get('height');
   const image = searchParams.get('image');
+  const message = searchParams.get('message');
   const description = searchParams.get('description') || `Can you guess the Pokémon? Height: ${height}`;
-  
   const placeholderImage = 'https://via.placeholder.com/400x600?text=No+Image+Available';
 
   try {
@@ -30,7 +30,7 @@ export default function handler(req) {
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: '20px' }}>
             <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Guess the Pokémon!</h1>
-            <p style={{ fontSize: '32px', lineHeight: '1.4' }}>{description}</p>
+            <p style={{ fontSize: message ? '40px' : '32px', lineHeight: '1.4' }}>{message || description}</p>
           </div>
           {image && (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -38,7 +38,6 @@ export default function handler(req) {
                 src={image} 
                 alt="Pokémon" 
                 style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                onError={(e) => { e.target.onerror = null; e.target.src = placeholderImage; }}
               />
             </div>
           )}
