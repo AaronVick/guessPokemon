@@ -1,5 +1,4 @@
 import { ImageResponse } from '@vercel/og';
-import { db } from '../../lib/firebase';
 
 export const config = {
   runtime: 'edge',
@@ -9,28 +8,15 @@ export default async function handler(req) {
   console.log('LeaderboardOG API accessed');
 
   try {
-    // Fetch the top 10 players from the leaderboard in Firebase
-    const leaderboardRef = db.collection('leaderboard');
-    const leaderboardSnapshot = await leaderboardRef.get();
-
-    let topPlayers = [];
-
-    // Loop through each FID document to get the sessions sub-collection
-    leaderboardSnapshot.forEach((doc) => {
-      const fid = doc.id;
-      const data = doc.data();
-
-      // Push each player into the topPlayers array
-      topPlayers.push({
-        username: data.username || 'Unknown',
-        totalCorrect: data.totalCorrect || 0,
-        totalAnswered: data.totalAnswered || 0,
-      });
-    });
-
-    // Sort players by their totalCorrect count in descending order
-    topPlayers.sort((a, b) => b.totalCorrect - a.totalCorrect);
-    topPlayers = topPlayers.slice(0, 10); // Get the top 10 players
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+    
+    // Fetch leaderboard data from the leaderboardData endpoint
+    const response = await fetch(`${baseUrl}/api/leaderboardData`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const topPlayers = await response.json();
+    console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
 
     return new ImageResponse(
       (
