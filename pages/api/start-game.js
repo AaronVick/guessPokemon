@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   try {
     const { untrustedData } = req.body; // Get untrustedData from the POST request body
-    const fid = untrustedData?.fid; // Extract fid from untrustedData
+    const fid = untrustedData?.fid; // Extract fid from untrustedData (Farcaster interaction)
     const sessionId = untrustedData?.sessionId; // Extract sessionId
 
     if (!fid || !sessionId) {
