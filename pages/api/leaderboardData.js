@@ -58,6 +58,12 @@ export default async function handler(req, res) {
 
     console.log('Top players:', JSON.stringify(topPlayers));
 
+    // If there are no players, return an empty array
+    if (topPlayers.length === 0) {
+      console.log('No players found in the leaderboard');
+      return res.status(200).json([]);
+    }
+
     res.status(200).json(topPlayers);
   } catch (error) {
     console.error('Error fetching leaderboard data:', error);

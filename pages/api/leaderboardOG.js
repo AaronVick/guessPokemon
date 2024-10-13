@@ -40,11 +40,17 @@ export default async function handler(req) {
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Top 10 Pokémon Guessers</h1>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
-            {topPlayers.map((player, index) => (
-              <p key={index} style={{ fontSize: '24px', margin: '5px 0', width: '100%', textAlign: 'left' }}>
-                {index + 1}. {player.username}: {player.totalCorrect} / {player.totalAnswered}
+            {topPlayers.length > 0 ? (
+              topPlayers.map((player, index) => (
+                <p key={index} style={{ fontSize: '24px', margin: '5px 0', width: '100%', textAlign: 'left' }}>
+                  {index + 1}. {player.username}: {player.totalCorrect} / {player.totalAnswered}
+                </p>
+              ))
+            ) : (
+              <p style={{ fontSize: '24px', margin: '5px 0', width: '100%', textAlign: 'center' }}>
+                No players yet. Be the first to play!
               </p>
-            ))}
+            )}
           </div>
         </div>
       ),
