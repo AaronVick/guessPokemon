@@ -10,10 +10,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { untrustedData } = req.body;
-    const fid = untrustedData?.fid;
+    const { untrustedData } = req.body; // Correctly get untrustedData from the POST request
+    const fid = untrustedData?.fid; // Retrieve fid directly from untrustedData
     const sessionId = untrustedData?.sessionId; // Get session ID passed from index.js
-    
+
     // Ensure both fid and sessionId are passed in the request
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
@@ -41,15 +41,6 @@ export default async function handler(req, res) {
 
     // Update the existing session in Firestore with new question data
     const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
-    
-    // Check if session exists before updating
-    const sessionSnapshot = await sessionRef.get();
-    if (!sessionSnapshot.exists) {
-      console.error('Session not found in Firestore');
-      return res.status(404).json({ error: 'Session not found' });
-    }
-
-    // If session exists, update it with the new game data
     await sessionRef.update({
       pokemonName,
       correctIndex: correctButtonIndex,
@@ -65,13 +56,13 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
           <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, stage: 'question' }))}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex }))}" />
         </head>
         <body></body>
       </html>
     `;
 
-    // Send the HTML response with the game question
+    // Send the HTML response
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
 
