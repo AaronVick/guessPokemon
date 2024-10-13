@@ -7,8 +7,9 @@ export const config = {
 export default function handler(req) {
   const { searchParams } = new URL(req.url);
   const message = searchParams.get('message');
-  const correctCount = searchParams.get('correctCount') || '0';
-  const totalAnswered = searchParams.get('totalAnswered') || '0';
+  const correctCount = searchParams.get('correctCount');
+  const totalAnswered = searchParams.get('totalAnswered');
+  const description = message || `Correct Answers: ${correctCount}\nTotal Answered: ${totalAnswered}`;
 
   try {
     return new ImageResponse(
@@ -16,19 +17,16 @@ export default function handler(req) {
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
             backgroundColor: '#4CAF50',
             color: '#FFFFFF',
             width: '100%',
             height: '100%',
-            padding: '20px',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontSize: '32px',
           }}
         >
-          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>{message}</h1>
-          <p style={{ fontSize: '36px', marginBottom: '10px' }}>Correct Answers: {correctCount}</p>
-          <p style={{ fontSize: '36px' }}>Total Answered: {totalAnswered}</p>
+          {description}
         </div>
       ),
       {
@@ -37,11 +35,11 @@ export default function handler(req) {
       }
     );
   } catch (error) {
-    console.error('Error generating answer feedback:', error);
+    console.error('Error generating image:', error);
     return new ImageResponse(
       (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FF0000', width: '100%', height: '100%' }}>
-          <h1>Error Generating Feedback</h1>
+        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+          <h1>Error Generating Image</h1>
         </div>
       ),
       {

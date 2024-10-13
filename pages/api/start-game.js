@@ -1,9 +1,8 @@
-import { db } from '../../lib/firebase';
 import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
-import { v4 as uuidv4 } from 'uuid';
+import { db } from '../../lib/firebase';
 
 export default async function handler(req, res) {
-  console.log('Start Game API accessed');
+  console.log(`Received ${req.method} request to /api/start-game`);
 
   if (req.method !== 'POST') {
     console.error(`Method ${req.method} not allowed`);
@@ -13,74 +12,76 @@ export default async function handler(req, res) {
   try {
     const { untrustedData } = req.body;
     const fid = untrustedData?.fid;
-
-    if (!fid) {
-      console.error('FID not provided');
-      return res.status(400).json({ error: 'Valid FID is required' });
-    }
-
-    // Use existing sessionId or generate a new one
-    let sessionId = untrustedData?.sessionId || uuidv4();
-
-    console.log(`Session ID: ${sessionId}`);
-    const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
-
-    // Check if session exists or create a new one
-    const sessionSnapshot = await sessionRef.get();
-    if (!sessionSnapshot.exists) {
-      await sessionRef.set({
-        correctCount: 0,
-        totalAnswered: 0,
-        sessionId,
-        timestamp: new Date(),
-      });
+    const sessionId = untrustedData?.sessionId; // Get session ID passed from index.js
+    
+    if (!fid || !sessionId) {
+      console.error('FID and sessionId are required');
+      return res.status(400).json({ error: 'FID and sessionId are required' });
     }
 
     // Fetch Pokémon data
-    const pokemonData = await fetchPokemonData();
-    const [wrongPokemonName] = await fetchRandomPokemonNames(1, pokemonData.pokemonName);
+    let pokemonData, wrongPokemonName;
+    try {
+      pokemonData = await fetchPokemonData();
+      [wrongPokemonName] = await fetchRandomPokemonNames(1, pokemonData.pokemonName);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      throw new Error('Failed to fetch necessary data for the game');
+    }
+
     const { pokemonName, height, image } = pokemonData;
 
     console.log('Game data:', { pokemonName, height, image, wrongPokemonName });
 
+    // Randomly assign correct answer to button 1 or 2
     const correctButtonIndex = Math.random() < 0.5 ? 1 : 2;
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
+    // Update the existing session in Firestore with new question data
+    const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
+    await sessionRef.update({
+      pokemonName,
+      correctIndex: correctButtonIndex,
+      timestamp: new Date(),
+    });
+
+    // Create the game response with the question
     const html = `
-      <!DOCTYPE html>
       <html>
-      <head>
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="${image}" />
-        <meta property="fc:frame:button:1" content="${button1Content}" />
-        <meta property="fc:frame:button:2" content="${button2Content}" />
-        <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
-        <style>
-          body { display: flex; justify-content: space-between; align-items: center; font-family: Arial, sans-serif; }
-          .question-container { width: 45%; }
-          .image-container { width: 45%; }
-        </style>
-      </head>
-      <body>
-        <div class="question-container">
-          <h1>Guess the Pokémon's Name!</h1>
-          <button>${button1Content}</button>
-          <button>${button2Content}</button>
-        </div>
-        <div class="image-container">
-          <img src="${image}" alt="${pokemonName}" width="300" />
-        </div>
-      </body>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${image}" />
+          <meta property="fc:frame:button:1" content="${button1Content}" />
+          <meta property="fc:frame:button:2" content="${button2Content}" />
+          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+        </head>
+        <body></body>
       </html>
     `;
 
+    // Send the HTML response
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
 
   } catch (error) {
     console.error('Error in start-game handler:', error);
-    res.status(500).send('Internal Server Error');
+
+    // Provide error-specific HTML to inform the user
+    const errorHtml = `
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/og?message=${encodeURIComponent('An error occurred. Please try again.')}" />
+          <meta property="fc:frame:button:1" content="Try Again" />
+          <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL || 'https://pokeguess.vercel.app'}/api/start-game" />
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.status(500).send(errorHtml);
   }
 }
