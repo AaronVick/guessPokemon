@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { untrustedData } = req.body; // Get untrustedData from the POST request body
-    const fid = untrustedData?.fid; // Extract fid from untrustedData (Farcaster interaction)
-    const sessionId = untrustedData?.sessionId; // Extract sessionId
+    const { untrustedData } = req.body; // Ensure the fid is retrieved from untrustedData
+    const fid = untrustedData?.fid; // Getting the fid directly from the untrustedData passed in the request
+    const sessionId = untrustedData?.sessionId; // Get session ID passed from index.js
 
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
