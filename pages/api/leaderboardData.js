@@ -10,7 +10,8 @@ export default async function handler(req, res) {
 
   try {
     console.log('Fetching leaderboard data from Firestore');
-    const leaderboardSnapshot = await db.collection('leaderboard').get();
+    const leaderboardRef = db.collection('leaderboard');
+    const leaderboardSnapshot = await leaderboardRef.get();
     console.log('Leaderboard documents fetched:', leaderboardSnapshot.size);
     
     let playerStats = [];
@@ -18,8 +19,9 @@ export default async function handler(req, res) {
     for (const doc of leaderboardSnapshot.docs) {
       const fid = doc.id;
       const userData = doc.data();
-      console.log(`Processing user ${fid}`);
-      const sessionsRef = db.collection('leaderboard').doc(fid).collection('sessions');
+      console.log(`Processing user ${fid}:`, userData);
+
+      const sessionsRef = leaderboardRef.doc(fid).collection('sessions');
       const sessionsSnapshot = await sessionsRef.get();
       console.log(`Sessions for user ${fid}:`, sessionsSnapshot.size);
 
@@ -28,11 +30,12 @@ export default async function handler(req, res) {
 
       sessionsSnapshot.forEach(sessionDoc => {
         const sessionData = sessionDoc.data();
+        console.log(`Session data for ${fid}:`, sessionData);
         totalCorrect += sessionData.correctCount || 0;
         totalAnswered += sessionData.totalAnswered || 0;
       });
 
-      console.log(`User ${fid} stats:`, { totalCorrect, totalAnswered });
+      console.log(`User ${fid} aggregated stats:`, { totalCorrect, totalAnswered });
 
       if (totalAnswered > 0) {
         playerStats.push({ 
@@ -45,6 +48,7 @@ export default async function handler(req, res) {
     }
 
     console.log('Total players with stats:', playerStats.length);
+    console.log('Player stats before sorting:', JSON.stringify(playerStats));
 
     // Sort players first by totalCorrect (descending), then by totalAnswered (ascending)
     playerStats.sort((a, b) => {
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
 
     const topPlayers = playerStats.slice(0, 10);
 
-    console.log('Top players:', JSON.stringify(topPlayers));
+    console.log('Top players after sorting:', JSON.stringify(topPlayers));
 
     // If there are no players, return an empty array
     if (topPlayers.length === 0) {
