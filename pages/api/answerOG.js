@@ -9,7 +9,6 @@ export default function handler(req) {
   const message = searchParams.get('message');
   const correctCount = searchParams.get('correctCount');
   const totalAnswered = searchParams.get('totalAnswered');
-  const description = message || `Correct Answers: ${correctCount}\nTotal Answered: ${totalAnswered}`;
 
   try {
     return new ImageResponse(
@@ -17,16 +16,22 @@ export default function handler(req) {
         <div
           style={{
             display: 'flex',
+            flexDirection: 'column',
             backgroundColor: '#4CAF50',
             color: '#FFFFFF',
             width: '100%',
             height: '100%',
+            padding: '40px',
             justifyContent: 'center',
             alignItems: 'center',
-            fontSize: '32px',
+            textAlign: 'center',
           }}
         >
-          {description}
+          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>{message}</h1>
+          <div style={{ fontSize: '32px', marginTop: '20px' }}>
+            <p>Correct Answers: {correctCount}</p>
+            <p>Total Answered: {totalAnswered}</p>
+          </div>
         </div>
       ),
       {
