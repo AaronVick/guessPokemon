@@ -25,16 +25,27 @@ export default async function handler(req, res) {
         totalAnswered += sessionData.totalAnswered || 0;
       });
 
-      playerStats.push({ 
-        fid, 
-        username: userData.username || `User ${fid}`,
-        totalCorrect, 
-        totalAnswered 
-      });
+      if (totalAnswered > 0) {
+        playerStats.push({ 
+          fid, 
+          username: userData.username || `User ${fid}`,
+          totalCorrect, 
+          totalAnswered 
+        });
+      }
     }
 
-    playerStats.sort((a, b) => b.totalCorrect - a.totalCorrect || b.totalAnswered - a.totalAnswered);
+    // Sort players first by totalCorrect (descending), then by totalAnswered (ascending)
+    playerStats.sort((a, b) => {
+      if (b.totalCorrect !== a.totalCorrect) {
+        return b.totalCorrect - a.totalCorrect;
+      }
+      return a.totalAnswered - b.totalAnswered;
+    });
+
     const topPlayers = playerStats.slice(0, 10);
+
+    console.log('Top players:', topPlayers);
 
     res.status(200).json(topPlayers);
   } catch (error) {

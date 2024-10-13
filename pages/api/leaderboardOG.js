@@ -5,12 +5,18 @@ export const config = {
 };
 
 export default async function handler(req) {
+  console.log('LeaderboardOG API accessed');
+
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+    console.log('Fetching leaderboard data from:', `${baseUrl}/api/leaderboardData`);
     
-    // Fetch leaderboard data from the new API endpoint
     const response = await fetch(`${baseUrl}/api/leaderboardData`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const topPlayers = await response.json();
+    console.log('Leaderboard data fetched:', topPlayers);
 
     // Generate OG image
     return new ImageResponse(
@@ -48,8 +54,9 @@ export default async function handler(req) {
     console.error('Error generating leaderboard OG image:', error);
     return new ImageResponse(
       (
-        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
           <h1>Error Generating Leaderboard Image</h1>
+          <p>{error.message}</p>
         </div>
       ),
       {
