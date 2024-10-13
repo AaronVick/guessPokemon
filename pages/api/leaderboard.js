@@ -6,6 +6,7 @@ export const config = {
 
 export default async function handler(req) {
   console.log('Leaderboard API accessed');
+  console.log('Request method:', req.method);
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     console.error(`Method ${req.method} not allowed`);
@@ -17,10 +18,13 @@ export default async function handler(req) {
 
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
+    console.log('Base URL:', baseUrl);
 
     // Fetch leaderboard data from the new API endpoint
+    console.log('Fetching leaderboard data...');
     const response = await fetch(`${baseUrl}/api/leaderboardData`);
     const topPlayers = await response.json();
+    console.log('Leaderboard data fetched:', topPlayers);
 
     // Create HTML response
     const html = `
@@ -40,14 +44,15 @@ export default async function handler(req) {
       </html>
     `;
 
+    console.log('Sending HTML response');
     return new Response(html, {
       status: 200,
       headers: { 'Content-Type': 'text/html' },
     });
 
   } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+    console.error('Error in leaderboard handler:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

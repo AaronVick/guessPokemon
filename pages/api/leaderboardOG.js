@@ -26,14 +26,17 @@ export default async function handler(req) {
             backgroundColor: '#4CAF50',
             color: '#FFFFFF',
             fontFamily: 'Arial, sans-serif',
+            padding: '20px',
           }}
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Top 10 Pokémon Guessers</h1>
-          {topPlayers.map((player, index) => (
-            <div key={index} style={{ fontSize: '24px', marginBottom: '10px' }}>
-              {index + 1}. {player.username}: {player.totalCorrect} / {player.totalAnswered}
-            </div>
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            {topPlayers.map((player, index) => (
+              <p key={index} style={{ fontSize: '24px', margin: '5px 0' }}>
+                {index + 1}. {player.username}: {player.totalCorrect} / {player.totalAnswered}
+              </p>
+            ))}
+          </div>
         </div>
       ),
       {
