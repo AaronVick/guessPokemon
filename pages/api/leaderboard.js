@@ -26,18 +26,7 @@ export default async function handler(req) {
     const topPlayers = await response.json();
     console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
 
-    // Try to generate OG image
-    let ogImageUrl = `${baseUrl}/api/leaderboardOG`;
-    try {
-      const ogResponse = await fetch(ogImageUrl);
-      if (!ogResponse.ok) {
-        throw new Error(`Failed to generate OG image: ${ogResponse.status} ${ogResponse.statusText}`);
-      }
-    } catch (ogError) {
-      console.error('Error generating OG image:', ogError);
-      // Fall back to generating a simple error image
-      ogImageUrl = `${baseUrl}/api/og?message=${encodeURIComponent('Error loading leaderboard')}`;
-    }
+    const ogImageUrl = `${baseUrl}/api/leaderboardOG`;
 
     // Create HTML response
     const html = `
