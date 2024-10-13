@@ -1,4 +1,4 @@
-import { fetchPokemonData, fetchRandomPokemonNames } from './pokeService';
+import { fetchPokemonData, fetchRandomPokemonNames, getFarcasterProfileName } from './pokeService';
 import { db } from '../../lib/firebase';
 
 export default async function handler(req, res) {
@@ -10,13 +10,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { untrustedData } = req.body; // Ensure the fid is retrieved from untrustedData
-    const fid = untrustedData?.fid; // Getting the fid directly from the untrustedData passed in the request
-    const sessionId = untrustedData?.sessionId; // Get session ID passed from index.js
+    const { untrustedData } = req.body;
+    const fid = untrustedData?.fid;
+    const sessionId = req.query.sessionId; // Get sessionId from query parameters
 
     if (!fid || !sessionId) {
       console.error('FID and sessionId are required');
       return res.status(400).json({ error: 'FID and sessionId are required' });
+    }
+
+    console.log('Received FID:', fid);
+
+    // Check if we already have the username for this FID
+    const userRef = db.collection('leaderboard').doc(fid.toString());
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists || !userDoc.data().username) {
+      // If we don't have the username, fetch it from Pinata and store it
+      const username = await getFarcasterProfileName(fid);
+      await userRef.set({ username }, { merge: true });
     }
 
     // Fetch Pokémon data
@@ -38,13 +50,29 @@ export default async function handler(req, res) {
     const button1Content = correctButtonIndex === 1 ? pokemonName : wrongPokemonName;
     const button2Content = correctButtonIndex === 2 ? pokemonName : wrongPokemonName;
 
-    // Update the existing session in Firestore with new question data
-    const sessionRef = db.collection('leaderboard').doc(fid.toString()).collection('sessions').doc(sessionId);
-    await sessionRef.update({
-      pokemonName,
-      correctIndex: correctButtonIndex,
-      timestamp: new Date(),
-    });
+    // Reference to the session document in Firestore
+    const sessionRef = userRef.collection('sessions').doc(sessionId);
+
+    // Check if the session already exists
+    const sessionDoc = await sessionRef.get();
+
+    if (!sessionDoc.exists) {
+      // If the session doesn't exist, create it
+      await sessionRef.set({
+        pokemonName,
+        correctIndex: correctButtonIndex,
+        timestamp: new Date(),
+        totalAnswered: 0,
+        correctCount: 0,
+      });
+    } else {
+      // If the session exists, update it
+      await sessionRef.update({
+        pokemonName,
+        correctIndex: correctButtonIndex,
+        timestamp: new Date(),
+      });
+    }
 
     // Create the game response with the question
     const html = `
@@ -55,7 +83,7 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
           <meta property="fc:frame:post_url" content="${process.env.NEXT_PUBLIC_BASE_URL}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: 0, correctCount: 0, stage: 'question' }))}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: sessionDoc.exists ? sessionDoc.data().totalAnswered : 0, correctCount: sessionDoc.exists ? sessionDoc.data().correctCount : 0, stage: 'question' }))}" />
         </head>
         <body></body>
       </html>
