@@ -1,7 +1,10 @@
 import { db } from '../../lib/firebase';
 
 export default async function handler(req, res) {
+  console.log('Received request to /api/answer');
+
   if (req.method !== 'POST') {
+    console.log('Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
@@ -11,7 +14,10 @@ export default async function handler(req, res) {
   const selectedButton = untrustedData.buttonIndex;
   const fid = untrustedData?.fid;
 
+  console.log('Parsed data:', { sessionId, correctIndex, selectedButton, fid });
+
   if (!sessionId || !fid || typeof selectedButton === 'undefined') {
+    console.log('Missing required data');
     return res.status(400).json({ error: 'Missing required data' });
   }
 
@@ -20,6 +26,7 @@ export default async function handler(req, res) {
     const sessionSnapshot = await sessionRef.get();
     
     if (!sessionSnapshot.exists) {
+      console.log('Game session not found');
       return res.status(404).json({ error: 'Game session not found' });
     }
 
@@ -36,8 +43,12 @@ export default async function handler(req, res) {
 
     const message = isCorrect ? 'Correct!' : `Wrong. The correct answer was ${state.correctTitle}.`;
 
+    console.log('Answer processed:', { isCorrect, newCorrectCount, newTotalAnswered, message });
+
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
     const imageUrl = `${baseUrl}/api/answerOG?message=${encodeURIComponent(message)}&correctCount=${newCorrectCount}&totalAnswered=${newTotalAnswered}`;
+
+    console.log('Generated image URL:', imageUrl);
 
     const html = `
       <!DOCTYPE html>
@@ -52,6 +63,7 @@ export default async function handler(req, res) {
       </html>
     `;
 
+    console.log('Sending HTML response');
     res.setHeader('Content-Type', 'text/html');
     res.status(200).send(html);
   } catch (error) {
@@ -67,6 +79,7 @@ export default async function handler(req, res) {
         <body></body>
       </html>
     `;
+    console.log('Sending error HTML response');
     res.setHeader('Content-Type', 'text/html');
     res.status(500).send(errorHtml);
   }

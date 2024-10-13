@@ -25,13 +25,12 @@ export default function handler(req) {
             justifyContent: 'center',
             alignItems: 'center',
             textAlign: 'center',
+            fontSize: '32px',
           }}
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>{message}</h1>
-          <div style={{ fontSize: '32px', marginTop: '20px' }}>
-            <p>Correct Answers: {correctCount}</p>
-            <p>Total Answered: {totalAnswered}</p>
-          </div>
+          <p>Correct Answers: {correctCount}</p>
+          <p>Total Answered: {totalAnswered}</p>
         </div>
       ),
       {
