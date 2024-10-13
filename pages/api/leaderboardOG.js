@@ -23,6 +23,7 @@ export default async function handler(req) {
     }
 
     // Generate OG image
+    console.log('Generating image response');
     return new ImageResponse(
       (
         <div
@@ -55,13 +56,28 @@ export default async function handler(req) {
       }
     );
   } catch (error) {
-    console.error('Error generating leaderboard OG image:', error);
+    console.error('Error in leaderboardOG handler:', error);
     console.error('Error stack:', error.stack);
+    console.log('Generating error image response');
     return new ImageResponse(
       (
-        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', padding: '20px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '36px', marginBottom: '20px' }}>Error Generating Leaderboard Image</h1>
-          <p style={{ fontSize: '24px' }}>{error.message}</p>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#FF0000',
+            color: '#FFFFFF',
+            fontFamily: 'Arial, sans-serif',
+            padding: '20px',
+            textAlign: 'center',
+          }}
+        >
+          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Error Loading Leaderboard</h1>
+          <p style={{ fontSize: '24px', maxWidth: '80%' }}>{error.message}</p>
         </div>
       ),
       {

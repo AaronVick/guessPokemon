@@ -24,7 +24,7 @@ export default async function handler(req) {
     console.log('Fetching leaderboard data...');
     const response = await fetch(`${baseUrl}/api/leaderboardData`);
     const topPlayers = await response.json();
-    console.log('Leaderboard data fetched:', topPlayers);
+    console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
 
     // Create HTML response
     const html = `
