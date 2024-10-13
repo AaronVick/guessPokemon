@@ -6,7 +6,9 @@ export default function Home() {
 
   // Generate a new session ID for each game
   const sessionId = uuidv4();
-  const fid = 'fakeFID123'; // Replace with actual FID retrieval logic
+
+  // Assuming `fid` comes from untrustedData, this is where you'll extract it in the API call
+  const fid = 'your logic to pass fid'; // Remove the 'fakeFID123' and replace this with actual dynamic fid logic
 
   const shareText = encodeURIComponent(`Check out this awesome Pokémon Guessing Game!\n\nFrame by @aaronv.eth`);
   const shareLink = `https://warpcast.com/~/compose?text=${shareText}&embeds[]=${encodeURIComponent(baseUrl)}`;
@@ -24,13 +26,19 @@ export default function Home() {
         <meta property="fc:frame:button:1" content="Play Game" />
         <meta
           property="fc:frame:button:1:post_url"
-          content={`${baseUrl}/api/start-game?sessionId=${sessionId}&fid=${fid}`}
+          content={`${baseUrl}/api/start-game?sessionId=${sessionId}&fid=${fid}`} // Send sessionId and fid in URL
         />
         <meta property="fc:frame:button:2" content="View Leaderboard" />
-        <meta property="fc:frame:button:2:post_url" content={`${baseUrl}/api/leaderboard`} />
+        <meta
+          property="fc:frame:button:2:post_url"
+          content={`${baseUrl}/api/leaderboard`}
+        />
         <meta property="fc:frame:button:3" content="Share" />
         <meta property="fc:frame:button:3:action" content="link" />
-        <meta property="fc:frame:button:3:target" content={shareLink} />
+        <meta
+          property="fc:frame:button:3:target"
+          content={shareLink}
+        />
       </Head>
       <h1>Pokémon Guessing Game</h1>
       <img
