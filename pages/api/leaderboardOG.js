@@ -16,7 +16,11 @@ export default async function handler(req) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const topPlayers = await response.json();
-    console.log('Leaderboard data fetched:', topPlayers);
+    console.log('Leaderboard data fetched:', JSON.stringify(topPlayers));
+
+    if (!Array.isArray(topPlayers) || topPlayers.length === 0) {
+      throw new Error('No leaderboard data available');
+    }
 
     // Generate OG image
     return new ImageResponse(
@@ -52,11 +56,12 @@ export default async function handler(req) {
     );
   } catch (error) {
     console.error('Error generating leaderboard OG image:', error);
+    console.error('Error stack:', error.stack);
     return new ImageResponse(
       (
-        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-          <h1>Error Generating Leaderboard Image</h1>
-          <p>{error.message}</p>
+        <div style={{ display: 'flex', backgroundColor: '#FF0000', width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', padding: '20px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '36px', marginBottom: '20px' }}>Error Generating Leaderboard Image</h1>
+          <p style={{ fontSize: '24px' }}>{error.message}</p>
         </div>
       ),
       {
