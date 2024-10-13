@@ -1,101 +1,61 @@
-import { ImageResponse } from '@vercel/og';
-import { db } from '../../lib/firebase';  // Assuming Firebase is set up
+import { db } from '../../lib/firebase';
 
-export const config = {
-  runtime: 'edge',
-};
-
-export default async function handler(req) {
+export default async function handler(req, res) {
   console.log('LeaderboardOG API accessed');
 
+  if (req.method !== 'GET') {
+    console.error(`Method ${req.method} not allowed`);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   try {
-    // Fetch top players from the database
-    const leaderboardSnapshot = await db.collection('leaderboard').get();
-    
+    // Fetch the top 10 players from the leaderboard in Firebase
+    const leaderboardRef = db.collection('leaderboard');
+    const leaderboardSnapshot = await leaderboardRef.get();
+
     let topPlayers = [];
-    for (const doc of leaderboardSnapshot.docs) {
+
+    // Loop through each FID document to get the sessions sub-collection
+    leaderboardSnapshot.forEach((doc) => {
       const fid = doc.id;
-      const sessionsSnapshot = await db.collection('leaderboard').doc(fid).collection('sessions').get();
+      const data = doc.data();
 
-      let totalCorrect = 0;
-      let totalAnswered = 0;
-      sessionsSnapshot.forEach(session => {
-        totalCorrect += session.data().correctCount || 0;
-        totalAnswered += session.data().totalAnswered || 0;
-      });
-
+      // Push each player into the topPlayers array
       topPlayers.push({
-        username: doc.data().username,
-        totalCorrect,
-        totalAnswered
+        username: data.username || 'Unknown',
+        totalCorrect: data.totalCorrect || 0,
+        totalAnswered: data.totalAnswered || 0,
       });
-    }
+    });
 
-    // Sort and get top 10
+    // Sort players by their totalCorrect count in descending order
     topPlayers.sort((a, b) => b.totalCorrect - a.totalCorrect);
-    topPlayers = topPlayers.slice(0, 10);
+    topPlayers = topPlayers.slice(0, 10); // Get the top 10 players
 
-    // Generate image response with leaderboard data
+    // Prepare leaderboard HTML content
     const leaderboardHTML = topPlayers.map((player, index) => `
-      <p style="font-size: 20px; margin-bottom: 5px;">${index + 1}. ${player.username}: ${player.totalCorrect} correct out of ${player.totalAnswered}</p>
+      <p>${index + 1}. ${player.username}: ${player.totalCorrect} correct out of ${player.totalAnswered} total</p>
     `).join('');
 
-    console.log('Generating leaderboard image with actual data');
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#4CAF50',
-            color: '#FFFFFF',
-            fontFamily: 'Arial, sans-serif',
-            padding: '20px',
-          }}
-        >
-          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Pokémon Guessing Game Leaderboard</h1>
-          <div style={{ fontSize: '24px', textAlign: 'center' }}>
-            {leaderboardHTML || 'No leaderboard data available.'}
-          </div>
-        </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-      }
-    );
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="fc:frame" content="vNext" />
+          <meta property="fc:frame:image" content="https://example.com/leaderboard-image.png" />
+        </head>
+        <body>
+          <h1>Top 10 Leaderboard</h1>
+          ${leaderboardHTML}
+        </body>
+      </html>
+    `;
+
+    // Send the HTML response
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(html);
   } catch (error) {
-    console.error('Error in leaderboardOG handler:', error);
-    console.error('Error stack:', error.stack);
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#FF0000',
-            color: '#FFFFFF',
-            fontFamily: 'Arial, sans-serif',
-            padding: '20px',
-            textAlign: 'center',
-          }}
-        >
-          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>Error Loading Leaderboard</h1>
-          <p style={{ fontSize: '24px', maxWidth: '80%' }}>{error.message || 'Unknown error occurred'}</p>
-        </div>
-      ),
-      {
-        width: 1200,
-        height: 630,
-      }
-    );
+    console.error('Error generating leaderboard OG image:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
