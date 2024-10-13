@@ -5,13 +5,18 @@ export const config = {
 };
 
 export default function handler(req) {
+  console.log('Received request to /api/answerOG');
+
   const { searchParams } = new URL(req.url);
   const message = searchParams.get('message');
   const correctCount = searchParams.get('correctCount');
   const totalAnswered = searchParams.get('totalAnswered');
 
+  console.log('Received parameters:', { message, correctCount, totalAnswered });
+
   try {
-    return new ImageResponse(
+    console.log('Generating image response');
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -29,6 +34,7 @@ export default function handler(req) {
           }}
         >
           <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>{message}</h1>
+          <p style={{ fontSize: '36px', marginBottom: '10px' }}>Your Progress:</p>
           <p>Correct Answers: {correctCount}</p>
           <p>Total Answered: {totalAnswered}</p>
         </div>
@@ -38,6 +44,8 @@ export default function handler(req) {
         height: 630,
       }
     );
+    console.log('Image response generated successfully');
+    return imageResponse;
   } catch (error) {
     console.error('Error generating image:', error);
     return new ImageResponse(

@@ -55,6 +55,8 @@ export default async function handler(req, res) {
 
     // Check if the session already exists
     const sessionDoc = await sessionRef.get();
+    let totalAnswered = 0;
+    let correctCount = 0;
 
     if (!sessionDoc.exists) {
       // If the session doesn't exist, create it
@@ -67,6 +69,9 @@ export default async function handler(req, res) {
       });
     } else {
       // If the session exists, update it
+      const sessionData = sessionDoc.data();
+      totalAnswered = sessionData.totalAnswered || 0;
+      correctCount = sessionData.correctCount || 0;
       await sessionRef.update({
         pokemonName,
         correctIndex: correctButtonIndex,
@@ -92,7 +97,7 @@ export default async function handler(req, res) {
           <meta property="fc:frame:button:1" content="${button1Content}" />
           <meta property="fc:frame:button:2" content="${button2Content}" />
           <meta property="fc:frame:post_url" content="${baseUrl}/api/answer" />
-          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered: sessionDoc.exists ? sessionDoc.data().totalAnswered : 0, correctCount: sessionDoc.exists ? sessionDoc.data().correctCount : 0, stage: 'question' }))}" />
+          <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, correctTitle: pokemonName, correctIndex: correctButtonIndex, totalAnswered, correctCount, stage: 'question' }))}" />
         </head>
         <body></body>
       </html>

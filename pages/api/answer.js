@@ -10,11 +10,11 @@ export default async function handler(req, res) {
 
   const { untrustedData } = req.body;
   const state = JSON.parse(decodeURIComponent(untrustedData?.state || '{}'));
-  const { sessionId, correctIndex } = state;
+  const { sessionId, correctIndex, totalAnswered, correctCount } = state;
   const selectedButton = untrustedData.buttonIndex;
   const fid = untrustedData?.fid;
 
-  console.log('Parsed data:', { sessionId, correctIndex, selectedButton, fid });
+  console.log('Parsed data:', { sessionId, correctIndex, selectedButton, fid, totalAnswered, correctCount });
 
   if (!sessionId || !fid || typeof selectedButton === 'undefined') {
     console.log('Missing required data');
@@ -32,8 +32,8 @@ export default async function handler(req, res) {
 
     const sessionData = sessionSnapshot.data();
     const isCorrect = selectedButton === correctIndex;
-    const newCorrectCount = isCorrect ? sessionData.correctCount + 1 : sessionData.correctCount;
-    const newTotalAnswered = sessionData.totalAnswered + 1;
+    const newCorrectCount = isCorrect ? correctCount + 1 : correctCount;
+    const newTotalAnswered = totalAnswered + 1;
 
     await sessionRef.update({
       correctCount: newCorrectCount,
@@ -41,12 +41,18 @@ export default async function handler(req, res) {
       timestamp: new Date(),
     });
 
+    console.log('Updated session data:', { newCorrectCount, newTotalAnswered });
+
     const message = isCorrect ? 'Correct!' : `Wrong. The correct answer was ${state.correctTitle}.`;
 
     console.log('Answer processed:', { isCorrect, newCorrectCount, newTotalAnswered, message });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://guess-pokemon-orpin.vercel.app';
-    const imageUrl = `${baseUrl}/api/answerOG?message=${encodeURIComponent(message)}&correctCount=${newCorrectCount}&totalAnswered=${newTotalAnswered}`;
+    const imageUrl = `${baseUrl}/api/answerOG?` + new URLSearchParams({
+      message: message,
+      correctCount: newCorrectCount.toString(),
+      totalAnswered: newTotalAnswered.toString()
+    }).toString();
 
     console.log('Generated image URL:', imageUrl);
 
@@ -58,6 +64,7 @@ export default async function handler(req, res) {
         <meta property="fc:frame:image" content="${imageUrl}" />
         <meta property="fc:frame:button:1" content="Next Question" />
         <meta property="fc:frame:post_url" content="${baseUrl}/api/start-game?sessionId=${sessionId}" />
+        <meta property="fc:frame:state" content="${encodeURIComponent(JSON.stringify({ sessionId, totalAnswered: newTotalAnswered, correctCount: newCorrectCount }))}" />
       </head>
       <body></body>
       </html>
